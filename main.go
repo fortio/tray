@@ -26,7 +26,7 @@ func Main() int {
 		ap.EndSyncMode()
 		return nil
 	}
-	ap.OnResize() // initial draw.
+	_ = ap.OnResize() // initial draw.
 	ap.AutoSync = false
 	err := ap.FPSTicks(func() bool {
 		if len(ap.Data) == 0 {

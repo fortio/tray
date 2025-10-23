@@ -43,35 +43,44 @@ func SMul[T ~[3]float64](v T, t float64) T {
 	return T{v[0] * t, v[1] * t, v[2] * t}
 }
 
+// SDiv: divide by scalar.
 func SDiv[T ~[3]float64](v T, t float64) T {
 	return T{v[0] / t, v[1] / t, v[2] / t}
 }
 
+// Length: returns the length of the vector.
 func Length[T ~[3]float64](v T) float64 {
 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
 }
 
+// Unit: returns the unit vector in the direction of v
+// (normalized to length 1).
 func Unit[T ~[3]float64](v T) T {
 	l := Length(v)
 	return T{v[0] / l, v[1] / l, v[2] / l}
 }
 
+// X: returns the X component.
 func (v Vec3) X() float64 {
 	return v[0]
 }
 
+// Y: returns the Y component.
 func (v Vec3) Y() float64 {
 	return v[1]
 }
 
+// Z: returns the Z component.
 func (v Vec3) Z() float64 {
 	return v[2]
 }
 
+// XYZ: creates a Vec3 from its components.
 func XYZ(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
+// ToRGBA converts ColorF to color.RGBA, clamping values to [0,1].
 func (c ColorF) ToRGBA() color.RGBA {
 	r := uint8(clamp(c[0], 0, 1) * 255)
 	g := uint8(clamp(c[1], 0, 1) * 255)

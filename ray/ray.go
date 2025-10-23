@@ -21,11 +21,11 @@ type Scene struct {
 func (s *Scene) TraceRay(r Ray) color.RGBA {
 	// Placeholder implementation: return a color based on ray direction.
 
-	unit := r.Direction.Unit()
+	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
-	white := ColorF(1.0, 1.0, 1.0)
-	blue := ColorF(0.5, 0.7, 1.0)
-	blend := white.SMul(1.0 - a).Add(blue.SMul(a))
+	white := ColorF{1.0, 1.0, 1.0}
+	blue := ColorF{0.5, 0.7, 1.0}
+	blend := Add(SMul(white, 1.0-a), SMul(blue, a))
 	return blend.ToRGBA()
 }
 
@@ -52,16 +52,16 @@ func (t *Tracer) Render(scene Scene) *image.RGBA {
 	viewportWidth := aspectRatio * viewportHeight
 	horizontal := Vec3{viewportWidth, 0, 0}
 	vertical := Vec3{0, -viewportHeight, 0} // y axis is inverted in image vs our world.
-	pixelXVector := horizontal.SDiv(float64(t.width))
-	pixelYVector := vertical.SDiv(float64(t.height))
-	upperLeftCorner := camera.Sub(horizontal.SDiv(2)).Sub(vertical.SDiv(2)).Sub(Vec3{0, 0, focalLength})
-	pixel00 := upperLeftCorner.Add(pixelXVector.Add(pixelYVector).SDiv(2)) // up + (px + py)/2 (center of pixel)
+	pixelXVector := SDiv(horizontal, float64(t.width))
+	pixelYVector := SDiv(vertical, float64(t.height))
+	upperLeftCorner := Sub(Sub(Sub(camera, SDiv(horizontal, 2)), SDiv(vertical, 2)), Vec3{0, 0, focalLength})
+	pixel00 := Add(upperLeftCorner, SDiv(Add(pixelXVector, pixelYVector), 2)) // up + (px + py)/2 (center of pixel)
 
 	for y := range t.height {
 		for x := range t.width {
 			// Compute ray for pixel (x, y)
-			pixel := pixel00.Add(pixelXVector.SMul(float64(x))).Add(pixelYVector.SMul(float64(y)))
-			rayDirection := pixel.Sub(camera)
+			pixel := Add(Add(pixel00, SMul(pixelXVector, float64(x))), SMul(pixelYVector, float64(y)))
+			rayDirection := Sub(pixel, camera)
 			ray := Ray{Origin: camera, Direction: rayDirection}
 			color := scene.TraceRay(ray)
 			t.imageData.SetRGBA(x, y, color)
@@ -76,5 +76,5 @@ type Ray struct {
 }
 
 func (r *Ray) At(t float64) Vec3 {
-	return r.Origin.Add(r.Direction.SMul(t))
+	return Add(r.Origin, SMul(r.Direction, t))
 }

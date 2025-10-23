@@ -9,7 +9,7 @@ import (
 func TestVec3Add(t *testing.T) {
 	v := Vec3{1, 2, 3}
 	u := Vec3{4, 5, 6}
-	result := v.Add(u)
+	result := Add(v, u)
 	expected := Vec3{5, 7, 9}
 	if result != expected {
 		t.Errorf("Add() = %v, want %v", result, expected)
@@ -19,7 +19,7 @@ func TestVec3Add(t *testing.T) {
 func TestVec3Sub(t *testing.T) {
 	v := Vec3{5, 7, 9}
 	u := Vec3{1, 2, 3}
-	result := v.Sub(u)
+	result := Sub(v, u)
 	expected := Vec3{4, 5, 6}
 	if result != expected {
 		t.Errorf("Sub() = %v, want %v", result, expected)
@@ -28,7 +28,7 @@ func TestVec3Sub(t *testing.T) {
 
 func TestVec3SMul(t *testing.T) {
 	v := Vec3{1, 2, 3}
-	result := v.SMul(2.5)
+	result := SMul(v, 2.5)
 	expected := Vec3{2.5, 5.0, 7.5}
 	if result != expected {
 		t.Errorf("SMul() = %v, want %v", result, expected)
@@ -37,7 +37,7 @@ func TestVec3SMul(t *testing.T) {
 
 func TestVec3SDiv(t *testing.T) {
 	v := Vec3{10, 20, 30}
-	result := v.SDiv(10)
+	result := SDiv(v, 10)
 	expected := Vec3{1, 2, 3}
 	if result != expected {
 		t.Errorf("SDiv() = %v, want %v", result, expected)
@@ -58,7 +58,7 @@ func TestVec3Length(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.v.Length()
+			result := Length(tt.v)
 			if math.Abs(result-tt.expected) > 1e-9 {
 				t.Errorf("Length() = %v, want %v", result, tt.expected)
 			}
@@ -68,7 +68,7 @@ func TestVec3Length(t *testing.T) {
 
 func TestVec3Unit(t *testing.T) {
 	v := Vec3{3, 4, 0}
-	result := v.Unit()
+	result := Unit(v)
 	expected := Vec3{0.6, 0.8, 0.0}
 
 	for i := 0; i < 3; i++ {
@@ -78,7 +78,7 @@ func TestVec3Unit(t *testing.T) {
 	}
 
 	// Check that unit vector has length 1
-	length := result.Length()
+	length := Length(result)
 	if math.Abs(length-1.0) > 1e-9 {
 		t.Errorf("Unit().Length() = %v, want 1.0", length)
 	}
@@ -99,8 +99,8 @@ func TestVec3Accessors(t *testing.T) {
 }
 
 func TestColorF(t *testing.T) {
-	c := ColorF(0.5, 0.75, 1.0)
-	if c.X() != 0.5 || c.Y() != 0.75 || c.Z() != 1.0 {
+	c := ColorF{0.5, 0.75, 1.0}
+	if c[0] != 0.5 || c[1] != 0.75 || c[2] != 1.0 {
 		t.Errorf("ColorF() = %v, want [0.5 0.75 1.0]", c)
 	}
 }
@@ -108,17 +108,17 @@ func TestColorF(t *testing.T) {
 func TestFloatColorToRGBA(t *testing.T) {
 	tests := []struct {
 		name     string
-		c        FloatColor
+		c        ColorF
 		expected color.RGBA
 	}{
-		{"black", ColorF(0, 0, 0), color.RGBA{R: 0, G: 0, B: 0, A: 255}},
-		{"white", ColorF(1, 1, 1), color.RGBA{R: 255, G: 255, B: 255, A: 255}},
-		{"red", ColorF(1, 0, 0), color.RGBA{R: 255, G: 0, B: 0, A: 255}},
-		{"green", ColorF(0, 1, 0), color.RGBA{R: 0, G: 255, B: 0, A: 255}},
-		{"blue", ColorF(0, 0, 1), color.RGBA{R: 0, G: 0, B: 255, A: 255}},
-		{"mid gray", ColorF(0.5, 0.5, 0.5), color.RGBA{R: 127, G: 127, B: 127, A: 255}},
-		{"clamped above", ColorF(1.5, 2.0, 3.0), color.RGBA{R: 255, G: 255, B: 255, A: 255}},
-		{"clamped below", ColorF(-1.0, -0.5, -2.0), color.RGBA{R: 0, G: 0, B: 0, A: 255}},
+		{"black", ColorF{0, 0, 0}, color.RGBA{R: 0, G: 0, B: 0, A: 255}},
+		{"white", ColorF{1, 1, 1}, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
+		{"red", ColorF{1, 0, 0}, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
+		{"green", ColorF{0, 1, 0}, color.RGBA{R: 0, G: 255, B: 0, A: 255}},
+		{"blue", ColorF{0, 0, 1}, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
+		{"mid gray", ColorF{0.5, 0.5, 0.5}, color.RGBA{R: 127, G: 127, B: 127, A: 255}},
+		{"clamped above", ColorF{1.5, 2.0, 3.0}, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
+		{"clamped below", ColorF{-1.0, -0.5, -2.0}, color.RGBA{R: 0, G: 0, B: 0, A: 255}},
 	}
 
 	for _, tt := range tests {

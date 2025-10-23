@@ -54,7 +54,7 @@ func (t *Tracer) Render(scene Scene) *image.RGBA {
 	vertical := Vec3{0, -viewportHeight, 0} // y axis is inverted in image vs our world.
 	pixelXVector := SDiv(horizontal, float64(t.width))
 	pixelYVector := SDiv(vertical, float64(t.height))
-	upperLeftCorner := Sub(Sub(Sub(camera, SDiv(horizontal, 2)), SDiv(vertical, 2)), Vec3{0, 0, focalLength})
+	upperLeftCorner := SubMultiple(camera, SDiv(horizontal, 2), SDiv(vertical, 2), Vec3{0, 0, focalLength})
 	pixel00 := Add(upperLeftCorner, SDiv(Add(pixelXVector, pixelYVector), 2)) // up + (px + py)/2 (center of pixel)
 
 	for y := range t.height {

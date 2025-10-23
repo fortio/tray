@@ -26,6 +26,78 @@ func TestVec3Sub(t *testing.T) {
 	}
 }
 
+func TestAddMultiple(t *testing.T) {
+	tests := []struct {
+		name     string
+		u        Vec3
+		vs       []Vec3
+		expected Vec3
+	}{
+		{"single vector", Vec3{1, 2, 3}, []Vec3{{4, 5, 6}}, Vec3{5, 7, 9}},
+		{"two vectors", Vec3{1, 2, 3}, []Vec3{{4, 5, 6}, {7, 8, 9}}, Vec3{12, 15, 18}},
+		{"three vectors", Vec3{1, 1, 1}, []Vec3{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, Vec3{2, 2, 2}},
+		{"no additional vectors", Vec3{5, 10, 15}, []Vec3{}, Vec3{5, 10, 15}},
+		{"with negatives", Vec3{10, 10, 10}, []Vec3{{-5, 0, 5}, {3, -3, 0}}, Vec3{8, 7, 15}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := AddMultiple(tt.u, tt.vs...)
+			if result != tt.expected {
+				t.Errorf("AddMultiple() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSubMultiple(t *testing.T) {
+	tests := []struct {
+		name     string
+		u        Vec3
+		v0       Vec3
+		vs       []Vec3
+		expected Vec3
+	}{
+		{"single subtraction", Vec3{10, 10, 10}, Vec3{1, 2, 3}, []Vec3{}, Vec3{9, 8, 7}},
+		{"two subtractions", Vec3{10, 10, 10}, Vec3{1, 2, 3}, []Vec3{{2, 3, 4}}, Vec3{7, 5, 3}},
+		{"three subtractions", Vec3{20, 20, 20}, Vec3{5, 5, 5}, []Vec3{{3, 3, 3}, {2, 2, 2}}, Vec3{10, 10, 10}},
+		{"with negatives", Vec3{10, 10, 10}, Vec3{5, 5, 5}, []Vec3{{-2, -2, -2}}, Vec3{7, 7, 7}},
+		{"equivalent to nested Sub", Vec3{20, 30, 40}, Vec3{5, 10, 15}, []Vec3{{2, 3, 4}, {1, 1, 1}}, Vec3{12, 16, 20}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := SubMultiple(tt.u, tt.v0, tt.vs...)
+			if result != tt.expected {
+				t.Errorf("SubMultiple() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSubMultipleUsageExample(t *testing.T) {
+	// Test the actual usage from ray.go
+	camera := Vec3{0, 0, 0}
+	horizontalHalf := Vec3{2, 0, 0}
+	verticalHalf := Vec3{0, 1, 0}
+	focal := Vec3{0, 0, 1}
+
+	// SubMultiple(camera, horizontalHalf, verticalHalf, focal)
+	// should equal camera - horizontalHalf - verticalHalf - focal
+	result := SubMultiple(camera, horizontalHalf, verticalHalf, focal)
+	expected := Vec3{-2, -1, -1}
+
+	if result != expected {
+		t.Errorf("SubMultiple() = %v, want %v", result, expected)
+	}
+
+	// Verify equivalence with nested Sub
+	nested := Sub(Sub(Sub(camera, horizontalHalf), verticalHalf), focal)
+	if result != nested {
+		t.Errorf("SubMultiple() = %v, nested Sub() = %v, should be equal", result, nested)
+	}
+}
+
 func TestVec3SMul(t *testing.T) {
 	v := Vec3{1, 2, 3}
 	result := SMul(v, 2.5)

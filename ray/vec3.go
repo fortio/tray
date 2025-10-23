@@ -13,13 +13,29 @@ type ColorF [3]float64
 
 // Methods for both Vec3 and ColorF
 
-// Add: vector addition.
+// Add: vector addition. returns u + v.
 func Add[T ~[3]float64](u, v T) T {
 	return T{v[0] + u[0], v[1] + u[1], v[2] + u[2]}
 }
 
+// Sub: vector subtraction, returns u - v.
 func Sub[T ~[3]float64](u, v T) T {
 	return T{u[0] - v[0], u[1] - v[1], u[2] - v[2]}
+}
+
+// AddMultiple: sums all the input vectors.
+func AddMultiple[T ~[3]float64](u T, vs ...T) T {
+	for _, v := range vs {
+		u = Add(u, v)
+	}
+	return u
+}
+
+// SubMultiple: subtracts all the other input vectors from u.
+// returns u - v0 - v1 - ...
+func SubMultiple[T ~[3]float64](u T, v0 T, vs ...T) T {
+	toSub := AddMultiple(v0, vs...)
+	return Sub(u, toSub)
 }
 
 // SMul: multiply by scalar.

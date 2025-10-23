@@ -6,6 +6,7 @@ import (
 	"fortio.org/cli"
 	"fortio.org/log"
 	"fortio.org/terminal/ansipixels"
+	"fortio.org/tray/ray"
 )
 
 func main() {
@@ -19,10 +20,16 @@ func Main() int {
 		return 1 // error already logged
 	}
 	defer ap.Restore()
+	ap.SyncBackgroundColor()
 	ap.OnResize = func() error {
 		ap.StartSyncMode()
 		ap.ClearScreen()
-		ap.WriteBoxed(ap.H/2-1, "TRay: Terminal Ray-tracing\nQ to quit.")
+		imgWidth, imgHeight := ap.W, ap.H*2
+		rt := ray.New(imgWidth, imgHeight)
+		scene := ray.Scene{}
+		img := rt.Render(scene)
+		_ = ap.ShowScaledImage(img)
+		ap.WriteBoxed(ap.H/2-1, "TRay: Terminal Ray-tracing\nImage:%d x %d\nQ to quit.", imgWidth, imgHeight)
 		ap.EndSyncMode()
 		return nil
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 // Vec3 represents a 3D vector.
-// Most of the function are implemented via generics and thus not methods.
+// Many of the functions are implemented via generics and thus not methods.
 type Vec3 [3]float64
 
 // ColorF is a RGB color with float components.

@@ -14,13 +14,29 @@ type Tracer struct {
 	imageData     *image.RGBA
 }
 
+type Sphere struct {
+	Center Vec3
+	Radius float64
+}
+
+func (s *Sphere) Hit(r Ray) bool {
+	oc := Sub(r.Origin, s.Center)
+	a := Dot(r.Direction, r.Direction)
+	b := 2.0 * Dot(oc, r.Direction)
+	c := Dot(oc, oc) - s.Radius*s.Radius
+	discriminant := b*b - 4*a*c
+	return discriminant > 0
+}
+
 type Scene struct {
 	// Fields defining the scene to be rendered.
+	S Sphere
 }
 
 func (s *Scene) TraceRay(r Ray) color.RGBA {
-	// Placeholder implementation: return a color based on ray direction.
-
+	if s.S.Hit(r) {
+		return color.RGBA{255, 20, 30, 255} // Red for hit
+	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
 	white := ColorF{1.0, 1.0, 1.0}
@@ -40,11 +56,13 @@ func New(width, height int) *Tracer {
 }
 
 // Render performs the ray tracing and returns the resulting image data.
-func (t *Tracer) Render(scene Scene) *image.RGBA {
+func (t *Tracer) Render(scene *Scene) *image.RGBA {
+	if scene == nil {
+		scene = &Scene{
+			S: Sphere{Center: Vec3{0, 0, -1}, Radius: 0.6},
+		}
+	}
 	// Implementation of ray tracing rendering.
-	_ = scene                            // to avoid unused variable warning
-	t.imageData.Set(10, 10, image.White) // Placeholder operation
-
 	focalLength := 1.0
 	camera := Vec3{0, 0, 0}
 	viewportHeight := 2.0

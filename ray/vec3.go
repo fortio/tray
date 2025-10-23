@@ -47,6 +47,11 @@ func (v Vec3) Minus(u0 Vec3, more ...Vec3) Vec3 {
 	return SubMultiple(v, u0, more...)
 }
 
+// Dot: dot product of two vectors.
+func Dot[T ~[3]float64](u, v T) float64 {
+	return u[0]*v[0] + u[1]*v[1] + u[2]*v[2]
+}
+
 // Plus adds one or more vectors to v.
 // Returns v + others[0] + others[1] + ...
 // This is a convenience method wrapper around AddMultiple.

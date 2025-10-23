@@ -16,5 +16,7 @@ func TestAlignment(t *testing.T) {
 	p1 := &at[1]
 	p0 := &at[0]
 	diff := uintptr(unsafe.Pointer(p1)) - uintptr(unsafe.Pointer(p0))
-	t.Errorf("Error by design just to show the value %p %p: %d", p0, p1, diff)
+	if diff != 6 {
+		t.Errorf("Alignment changed, expected 6 got %d (%p %p)", diff, p0, p1)
+	}
 }

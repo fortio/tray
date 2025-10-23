@@ -71,7 +71,7 @@ func TestVec3Unit(t *testing.T) {
 	result := Unit(v)
 	expected := Vec3{0.6, 0.8, 0.0}
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if math.Abs(result[i]-expected[i]) > 1e-9 {
 			t.Errorf("Unit()[%d] = %v, want %v", i, result[i], expected[i])
 		}

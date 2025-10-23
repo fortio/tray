@@ -2,12 +2,12 @@ package ray
 
 import "testing"
 
-// Non-generic versions for comparison
+// Non-generic versions for comparison.
 func AddDirect(u, v Vec3) Vec3 {
 	return Vec3{v[0] + u[0], v[1] + u[1], v[2] + u[2]}
 }
 
-func (u Vec3) AddMethod(v Vec3) Vec3 {
+func (v Vec3) AddMethod(u Vec3) Vec3 {
 	return Vec3{v[0] + u[0], v[1] + u[1], v[2] + u[2]}
 }
 
@@ -15,7 +15,7 @@ func SMulDirect(v Vec3, t float64) Vec3 {
 	return Vec3{v[0] * t, v[1] * t, v[2] * t}
 }
 
-// Benchmarks
+// Benchmarks.
 func BenchmarkAddGeneric(b *testing.B) {
 	v1 := Vec3{1.0, 2.0, 3.0}
 	v2 := Vec3{4.0, 5.0, 6.0}
@@ -46,7 +46,7 @@ func BenchmarkAddMethod(b *testing.B) {
 	_ = result
 }
 
-// More realistic: chain of operations
+// (Somewhat) More realistic: chain of operations.
 func BenchmarkChainedGeneric(b *testing.B) {
 	v1 := Vec3{1.0, 2.0, 3.0}
 	v2 := Vec3{4.0, 5.0, 6.0}

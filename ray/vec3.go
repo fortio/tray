@@ -6,6 +6,7 @@ import (
 )
 
 // Vec3 represents a 3D vector.
+// Most of the function are implemented via generics and thus not methods.
 type Vec3 [3]float64
 
 // ColorF is a RGB color with float components.
@@ -36,6 +37,30 @@ func AddMultiple[T ~[3]float64](u T, vs ...T) T {
 func SubMultiple[T ~[3]float64](u T, v0 T, vs ...T) T {
 	toSub := AddMultiple(v0, vs...)
 	return Sub(u, toSub)
+}
+
+// Minus subtracts one or more vectors from v.
+// Returns v - u0 - more[0] - more[1] - ...
+// This is a convenience method wrapper around SubMultiple.
+// Example: camera.Minus(offset1, offset2, offset3).
+func (v Vec3) Minus(u0 Vec3, more ...Vec3) Vec3 {
+	return SubMultiple(v, u0, more...)
+}
+
+// Plus adds one or more vectors to v.
+// Returns v + others[0] + others[1] + ...
+// This is a convenience method wrapper around AddMultiple.
+// Example: position.Plus(velocity, acceleration).
+func (v Vec3) Plus(others ...Vec3) Vec3 {
+	return AddMultiple(v, others...)
+}
+
+// Times multiplies vector v by scalar t.
+// Returns v * t.
+// This is a convenience method wrapper around SMul.
+// Example: direction.Times(distance).
+func (v Vec3) Times(t float64) Vec3 {
+	return SMul(v, t)
 }
 
 // SMul: multiply by scalar.

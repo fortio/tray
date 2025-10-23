@@ -98,6 +98,58 @@ func TestSubMultipleUsageExample(t *testing.T) {
 	}
 }
 
+func TestMethodStyleAPI(t *testing.T) {
+	// Test that method-style API produces same results as function-style
+	v1 := Vec3{10, 20, 30}
+	v2 := Vec3{1, 2, 3}
+	v3 := Vec3{4, 5, 6}
+
+	// Test Plus
+	methodPlus := v1.Plus(v2, v3)
+	funcPlus := AddMultiple(v1, v2, v3)
+	if methodPlus != funcPlus {
+		t.Errorf("Plus() = %v, AddMultiple() = %v, should be equal", methodPlus, funcPlus)
+	}
+
+	// Test Minus
+	methodMinus := v1.Minus(v2, v3)
+	funcMinus := SubMultiple(v1, v2, v3)
+	if methodMinus != funcMinus {
+		t.Errorf("Minus() = %v, SubMultiple() = %v, should be equal", methodMinus, funcMinus)
+	}
+
+	// Test Times
+	methodTimes := v1.Times(2.5)
+	funcTimes := SMul(v1, 2.5)
+	if methodTimes != funcTimes {
+		t.Errorf("Times() = %v, SMul() = %v, should be equal", methodTimes, funcTimes)
+	}
+}
+
+func TestMethodStyleChaining(t *testing.T) {
+	// Test realistic chaining as used in ray.go
+	camera := XYZ(0, 0, 0)
+	horizontal := XYZ(4, 0, 0)
+	vertical := XYZ(0, 2, 0)
+	focal := XYZ(0, 0, 1)
+
+	// Method style (readable)
+	upperLeft := camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), focal)
+
+	// Function style (equivalent)
+	upperLeftFunc := SubMultiple(camera, SMul(horizontal, 0.5), SMul(vertical, 0.5), focal)
+
+	if upperLeft != upperLeftFunc {
+		t.Errorf("Method style = %v, function style = %v, should be equal", upperLeft, upperLeftFunc)
+	}
+
+	// Expected result
+	expected := Vec3{-2, -1, -1}
+	if upperLeft != expected {
+		t.Errorf("upperLeft = %v, want %v", upperLeft, expected)
+	}
+}
+
 func TestVec3SMul(t *testing.T) {
 	v := Vec3{1, 2, 3}
 	result := SMul(v, 2.5)

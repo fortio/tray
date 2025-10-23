@@ -50,18 +50,18 @@ func (t *Tracer) Render(scene Scene) *image.RGBA {
 	viewportHeight := 2.0
 	aspectRatio := float64(t.width) / float64(t.height)
 	viewportWidth := aspectRatio * viewportHeight
-	horizontal := Vec3{viewportWidth, 0, 0}
-	vertical := Vec3{0, -viewportHeight, 0} // y axis is inverted in image vs our world.
+	horizontal := XYZ(viewportWidth, 0, 0)
+	vertical := XYZ(0, -viewportHeight, 0) // y axis is inverted in image vs our world.
 	pixelXVector := SDiv(horizontal, float64(t.width))
 	pixelYVector := SDiv(vertical, float64(t.height))
-	upperLeftCorner := SubMultiple(camera, SDiv(horizontal, 2), SDiv(vertical, 2), Vec3{0, 0, focalLength})
-	pixel00 := Add(upperLeftCorner, SDiv(Add(pixelXVector, pixelYVector), 2)) // up + (px + py)/2 (center of pixel)
+	upperLeftCorner := camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, focalLength})
+	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
 
 	for y := range t.height {
 		for x := range t.width {
 			// Compute ray for pixel (x, y)
-			pixel := Add(Add(pixel00, SMul(pixelXVector, float64(x))), SMul(pixelYVector, float64(y)))
-			rayDirection := Sub(pixel, camera)
+			pixel := pixel00.Plus(pixelXVector.Times(float64(x)), pixelYVector.Times(float64(y)))
+			rayDirection := pixel.Minus(camera)
 			ray := Ray{Origin: camera, Direction: rayDirection}
 			color := scene.TraceRay(ray)
 			t.imageData.SetRGBA(x, y, color)

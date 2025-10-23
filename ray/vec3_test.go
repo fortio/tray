@@ -8,7 +8,7 @@ import (
 
 func TestVec3Add(t *testing.T) {
 	v := Vec3{1, 2, 3}
-	u := Vec3{4, 5, 6}
+	u := XYZ(4, 5, 6)
 	result := Add(v, u)
 	expected := Vec3{5, 7, 9}
 	if result != expected {

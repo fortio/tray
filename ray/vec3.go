@@ -52,7 +52,7 @@ func (v Vec3) Z() float64 {
 	return v[2]
 }
 
-func (v Vec3) XYZ(x, y, z float64) Vec3 {
+func XYZ(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 

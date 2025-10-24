@@ -18,8 +18,10 @@ func main() {
 }
 
 func Main() int {
-	fSample := flag.Float64("s", 5, "Supersampling factor")
-	fMaxDepth := flag.Int("d", 10, "Maximum ray bounce depth")
+	fSample := flag.Float64("s", 2, "Image supersampling factor")
+	fRays := flag.Int("r", 32, "Number of rays per pixel")
+	fMaxDepth := flag.Int("d", 8, "Maximum ray bounce depth")
+	fExit := flag.Bool("exit", false, "Exit immediately after rendering the image once (for timing purposes)")
 	cli.Main()
 	supersample := *fSample
 	if supersample <= 0 {
@@ -32,6 +34,7 @@ func Main() int {
 	defer ap.Restore()
 	ap.SyncBackgroundColor()
 	var resized *image.RGBA
+	showSplash := !*fExit
 	ap.OnResize = func() error {
 		ap.StartSyncMode()
 		ap.ClearScreen()
@@ -39,6 +42,7 @@ func Main() int {
 		imgWidth, imgHeight := int(math.Round(supersample*float64(ap.W))), int(math.Round(supersample*float64(ap.H*2)))
 		rt := ray.New(imgWidth, imgHeight)
 		rt.MaxDepth = *fMaxDepth
+		rt.NumRaysPerPixel = *fRays
 		img := rt.Render(nil) // default scene
 		// Downscale image:
 		resized = img
@@ -52,12 +56,17 @@ func Main() int {
 			}
 		}
 		_ = ap.ShowScaledImage(resized)
-		ap.WriteBoxed(ap.H/2-1, "TRay: Terminal Ray-tracing\nImage:%d x %d (Sample x%.1f)\nQ to quit.",
-			imgWidth, imgHeight, supersample)
+		if showSplash {
+			ap.WriteBoxed(ap.H/2-2, "TRay: Terminal Ray-tracing\n%d x %d image (%.1fx)\nRays %d, Depth %d\nQ to quit.",
+				imgWidth, imgHeight, supersample, rt.NumRaysPerPixel, rt.MaxDepth)
+		}
 		ap.EndSyncMode()
 		return nil
 	}
 	_ = ap.OnResize() // initial draw.
+	if *fExit {
+		return 0
+	}
 	ap.AutoSync = false
 	err := ap.FPSTicks(func() bool {
 		if len(ap.Data) == 0 {
@@ -69,9 +78,14 @@ func Main() int {
 			log.Infof("Exiting on %q", c)
 			return false
 		default:
-			log.Debugf("Input %q", c)
-			ap.HideCursor()
-			_ = ap.ShowScaledImage(resized)
+			log.Debugf("Input %q, rerendering...", c)
+			if showSplash {
+				ap.HideCursor()
+				showSplash = false
+				_ = ap.ShowScaledImage(resized)
+			} else {
+				_ = ap.OnResize()
+			}
 		}
 		return true
 	})

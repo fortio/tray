@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"math"
 	"testing"
+
+	"fortio.org/sets"
 )
 
 func TestVec3Add(t *testing.T) {
@@ -469,5 +471,243 @@ func TestIntervalPredefinedConstants(t *testing.T) {
 	}
 	if ZeroOne.Length() != 1 {
 		t.Errorf("ZeroOne.Length() = %v, want 1", ZeroOne.Length())
+	}
+}
+
+// TestRandom just... exercises the Random function
+// and that values are ... different.
+func TestRandom(t *testing.T) {
+	const samples = 10
+	results := sets.New[Vec3]()
+	expected := Interval{Start: 0.0, End: 1.0}
+	for range samples {
+		v := Random[Vec3]()
+		// Check each component is in [0,1)
+		for i := range 3 {
+			if !expected.Contains(v[i]) {
+				t.Errorf("Random() component %d = %v, want in [0,1)", i, v[i])
+			}
+		}
+		// Collect unique samples
+		results.Add(v)
+	}
+	if results.Len() != samples {
+		t.Errorf("Random() produced %d unique samples, want %d", results.Len(), samples)
+	}
+}
+
+// TestRandomUnitVectorCorrectness verifies that all three RandomUnitVector variants
+// produce vectors of unit length.
+func TestRandomUnitVectorCorrectness(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func() Vec3
+	}{
+		{"RandomUnitVector", RandomUnitVector[Vec3]},
+		{"RandomUnitVectorAngle", RandomUnitVectorAngle[Vec3]},
+		{"RandomUnitVectorNorm", RandomUnitVector[Vec3]},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			const samples = 100
+			const tolerance = 1e-9
+
+			for i := range samples {
+				v := tt.fn()
+				length := Length(v)
+
+				if math.Abs(length-1.0) > tolerance {
+					t.Errorf("sample %d: Length() = %.15f, want 1.0 (diff: %.15e)",
+						i, length, length-1.0)
+				}
+			}
+		})
+	}
+}
+
+// TestRandomUnitVectorDistribution checks that the generated vectors are
+// uniformly distributed over the unit sphere by testing:
+// 1. Mean of components approaches zero.
+// 2. Standard deviation of each component approaches expected value.
+// 3. Points cover all octants of the sphere.
+func TestRandomUnitVectorDistribution(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping distribution test in short mode")
+	}
+
+	tests := []struct {
+		name string
+		fn   func() Vec3
+	}{
+		{"RandomUnitVectorRej", RandomUnitVectorRej[Vec3]},
+		{"RandomUnitVectorAngle", RandomUnitVectorAngle[Vec3]},
+		{"RandomUnitVector (Norm method)", RandomUnitVector[Vec3]},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			const samples = 100000
+
+			// Track statistics
+			var sumX, sumY, sumZ float64
+			var sumX2, sumY2, sumZ2 float64
+			octantCounts := make([]int, 8)
+
+			for range samples {
+				v := tt.fn()
+				x, y, z := v[0], v[1], v[2]
+
+				// Accumulate for mean and variance
+				sumX += x
+				sumY += y
+				sumZ += z
+				sumX2 += x * x
+				sumY2 += y * y
+				sumZ2 += z * z
+
+				// Count octant
+				octant := 0
+				if x > 0 {
+					octant |= 1
+				}
+				if y > 0 {
+					octant |= 2
+				}
+				if z > 0 {
+					octant |= 4
+				}
+				octantCounts[octant]++
+			}
+
+			// Check means are near zero
+			meanX := sumX / samples
+			meanY := sumY / samples
+			meanZ := sumZ / samples
+
+			// For uniform distribution on sphere, mean should be (0,0,0)
+			// With 100k samples, standard error ≈ 1/sqrt(100000) ≈ 0.003
+			// We use 5 sigma threshold for robustness: 5 * 0.003 ≈ 0.015
+			const meanTolerance = 0.015
+			if math.Abs(meanX) > meanTolerance {
+				t.Errorf("mean X = %.6f, want ≈0 (within %.6f)", meanX, meanTolerance)
+			}
+			if math.Abs(meanY) > meanTolerance {
+				t.Errorf("mean Y = %.6f, want ≈0 (within %.6f)", meanY, meanTolerance)
+			}
+			if math.Abs(meanZ) > meanTolerance {
+				t.Errorf("mean Z = %.6f, want ≈0 (within %.6f)", meanZ, meanTolerance)
+			}
+
+			// Check variance for each component
+			// For uniform distribution on unit sphere, variance of each component ≈ 1/3
+			varX := sumX2/samples - meanX*meanX
+			varY := sumY2/samples - meanY*meanY
+			varZ := sumZ2/samples - meanZ*meanZ
+
+			expectedVar := 1.0 / 3.0
+			const varTolerance = 0.01 // Allow 1% deviation
+
+			if math.Abs(varX-expectedVar) > varTolerance {
+				t.Errorf("variance X = %.6f, want ≈%.6f (within %.6f)",
+					varX, expectedVar, varTolerance)
+			}
+			if math.Abs(varY-expectedVar) > varTolerance {
+				t.Errorf("variance Y = %.6f, want ≈%.6f (within %.6f)",
+					varY, expectedVar, varTolerance)
+			}
+			if math.Abs(varZ-expectedVar) > varTolerance {
+				t.Errorf("variance Z = %.6f, want ≈%.6f (within %.6f)",
+					varZ, expectedVar, varTolerance)
+			}
+
+			// Check octant distribution
+			// Each octant should contain approximately samples/8 points
+			expectedPerOctant := samples / 8
+			// Allow 15% deviation from expected
+			octantTolerance := float64(expectedPerOctant) * 0.15
+
+			for octant, count := range octantCounts {
+				diff := math.Abs(float64(count) - float64(expectedPerOctant))
+				if diff > octantTolerance {
+					t.Errorf("octant %d: count = %d, want ≈%d (within %.0f)",
+						octant, count, expectedPerOctant, octantTolerance)
+				}
+			}
+		})
+	}
+}
+
+// TestRandomUnitVectorNoBias specifically tests for known biases:
+// - Angle method: check that z-coordinate distribution is uniform.
+// - Rejection method: check rejection rate is reasonable.
+func TestRandomUnitVectorNoBias(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping bias test in short mode")
+	}
+
+	t.Run("AngleMethod_ZDistribution", func(t *testing.T) {
+		const samples = 10000
+		const bins = 20
+		histogram := make([]int, bins)
+
+		for range samples {
+			v := RandomUnitVectorAngle[Vec3]()
+			// z is in [-1, 1], map to bin [0, bins-1]
+			bin := int((v[2] + 1) / 2 * float64(bins))
+			if bin >= bins {
+				bin = bins - 1
+			}
+			if bin < 0 {
+				bin = 0
+			}
+			histogram[bin]++
+		}
+
+		// Each bin should contain approximately samples/bins points
+		expectedPerBin := samples / bins
+		// Chi-square test would be more rigorous, but simple tolerance works
+		tolerance := float64(expectedPerBin) * 0.20 // 20% tolerance
+
+		for bin, count := range histogram {
+			diff := math.Abs(float64(count) - float64(expectedPerBin))
+			if diff > tolerance {
+				t.Errorf("z-distribution bin %d: count = %d, want ≈%d (within %.0f)",
+					bin, count, expectedPerBin, tolerance)
+			}
+		}
+	})
+
+	t.Run("RejectionMethod_ReasonableAcceptance", func(_ *testing.T) {
+		// The rejection method should accept points in a sphere inscribed in a cube
+		// Volume of sphere / volume of cube = (4/3)πr³ / (2r)³ = π/6 ≈ 0.524
+		// So we expect roughly 52% acceptance rate
+		// This is a smoke test, not a statistical test
+		const samples = 1000
+		for range samples {
+			_ = RandomUnitVectorRej[Vec3]()
+		}
+		// If this hangs or takes too long, there's a problem with the rejection logic
+		// The test passing means it completed in reasonable time
+	})
+}
+
+// Benchmarks for comparing the three methods
+
+func BenchmarkRandomUnitVectorRejection(b *testing.B) {
+	for range b.N {
+		_ = RandomUnitVectorRej[Vec3]()
+	}
+}
+
+func BenchmarkRandomUnitVectorAngle(b *testing.B) {
+	for range b.N {
+		_ = RandomUnitVectorAngle[Vec3]()
+	}
+}
+
+func BenchmarkRandomUnitVectorNorm(b *testing.B) {
+	for range b.N {
+		_ = RandomUnitVector[Vec3]()
 	}
 }

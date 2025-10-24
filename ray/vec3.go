@@ -233,8 +233,9 @@ func (i Interval) Clamp(t float64) float64 {
 }
 
 var (
-	Empty    = Interval{Start: math.Inf(1), End: math.Inf(-1)}
-	Universe = Interval{Start: math.Inf(-1), End: math.Inf(1)}
-	Front    = Interval{Start: 0, End: math.Inf(1)}
-	ZeroOne  = Interval{Start: 0, End: 1}
+	Empty        = Interval{Start: math.Inf(1), End: math.Inf(-1)}
+	Universe     = Interval{Start: math.Inf(-1), End: math.Inf(1)}
+	Front        = Interval{Start: 0, End: math.Inf(1)}
+	FrontEpsilon = Interval{Start: 1e-6, End: math.Inf(1)}
+	ZeroOne      = Interval{Start: 0, End: 1}
 )

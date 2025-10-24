@@ -12,6 +12,7 @@ type Tracer struct {
 	Camera         Vec3
 	FocalLength    float64
 	ViewportHeight float64
+	MaxDepth       int
 	width, height  int
 	imageData      *image.RGBA
 }
@@ -83,11 +84,14 @@ type Scene struct {
 	Objects []Hittable
 }
 
-func (s *Scene) RayColor(r Ray) ColorF {
-	if hit, hr := s.Hit(r, Front); hit {
+func (s *Scene) RayColor(r Ray, depth int) ColorF {
+	if depth <= 0 {
+		return ColorF{0, 0, 0}
+	}
+	if hit, hr := s.Hit(r, FrontEpsilon); hit {
 		direction := RandomOnHemisphere(hr.Normal)
 		newRay := Ray{Origin: hr.Point, Direction: direction}
-		return SDiv(s.RayColor(newRay), 2.0)
+		return SDiv(s.RayColor(newRay, depth-1), 2.0)
 	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
@@ -125,6 +129,9 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if t.ViewportHeight == 0 {
 		t.ViewportHeight = 2.0
 	}
+	if t.MaxDepth == 0 {
+		t.MaxDepth = 10
+	}
 	// And zero value (0,0,0) for Camera is the right default.
 
 	aspectRatio := float64(t.width) / float64(t.height)
@@ -142,7 +149,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 			pixel := pixel00.Plus(pixelXVector.Times(float64(x)), pixelYVector.Times(float64(y)))
 			rayDirection := pixel.Minus(t.Camera)
 			ray := Ray{Origin: t.Camera, Direction: rayDirection}
-			color := scene.RayColor(ray).ToRGBA()
+			color := scene.RayColor(ray, t.MaxDepth).ToRGBA()
 			t.imageData.SetRGBA(x, y, color)
 		}
 	}

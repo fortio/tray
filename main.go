@@ -18,13 +18,13 @@ func main() {
 }
 
 func Main() int {
-	fSample := flag.Float64("s", 2, "Supersampling factor")
+	fSample := flag.Float64("s", 5, "Supersampling factor")
+	fMaxDepth := flag.Int("d", 10, "Maximum ray bounce depth")
 	cli.Main()
 	supersample := *fSample
 	if supersample <= 0 {
 		supersample = 1
 	}
-	log.Infof("Starting TRay with supersampling x%f", supersample)
 	ap := ansipixels.NewAnsiPixels(60)
 	if err := ap.Open(); err != nil {
 		return 1 // error already logged
@@ -38,6 +38,7 @@ func Main() int {
 		// render at supersampled resolution
 		imgWidth, imgHeight := int(math.Round(supersample*float64(ap.W))), int(math.Round(supersample*float64(ap.H*2)))
 		rt := ray.New(imgWidth, imgHeight)
+		rt.MaxDepth = *fMaxDepth
 		img := rt.Render(nil) // default scene
 		// Downscale image:
 		resized = img
@@ -47,7 +48,7 @@ func Main() int {
 			if supersample < 1 {
 				draw.NearestNeighbor.Scale(resized, resized.Bounds(), img, origBounds, draw.Over, nil)
 			} else {
-				draw.CatmullRom.Scale(resized, resized.Bounds(), img, origBounds, draw.Over, nil)
+				draw.BiLinear.Scale(resized, resized.Bounds(), img, origBounds, draw.Over, nil)
 			}
 		}
 		_ = ap.ShowScaledImage(resized)

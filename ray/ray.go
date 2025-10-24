@@ -125,6 +125,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if t.ViewportHeight == 0 {
 		t.ViewportHeight = 2.0
 	}
+	// And zero value (0,0,0) for Camera is the right default.
+
 	aspectRatio := float64(t.width) / float64(t.height)
 	viewportWidth := aspectRatio * t.ViewportHeight
 	horizontal := XYZ(viewportWidth, 0, 0)

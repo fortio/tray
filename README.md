@@ -1,5 +1,6 @@
 [![GoDoc](https://godoc.org/fortio.org/tray?status.svg)](https://pkg.go.dev/fortio.org/tray)
 [![Go Report Card](https://goreportcard.com/badge/fortio.org/tray)](https://goreportcard.com/report/fortio.org/tray)
+[![GitHub Release](https://img.shields.io/github/release/fortio/tray.svg?style=flat)](https://github.com/fortio/tray/releases/)
 [![CI Checks](https://github.com/fortio/tray/actions/workflows/include.yml/badge.svg)](https://github.com/fortio/tray/actions/workflows/include.yml)
 [![codecov](https://codecov.io/github/fortio/tray/graph/badge.svg?token=Yx6QaeQr1b)](https://codecov.io/github/fortio/tray)
 

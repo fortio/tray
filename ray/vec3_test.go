@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"math"
 	"testing"
+
+	"fortio.org/sets"
 )
 
 func TestVec3Add(t *testing.T) {
@@ -469,6 +471,28 @@ func TestIntervalPredefinedConstants(t *testing.T) {
 	}
 	if ZeroOne.Length() != 1 {
 		t.Errorf("ZeroOne.Length() = %v, want 1", ZeroOne.Length())
+	}
+}
+
+// TestRandom just... exercises the Random function
+// and that values are ... different.
+func TestRandom(t *testing.T) {
+	const samples = 10
+	results := sets.New[Vec3]()
+	expected := Interval{Start: 0.0, End: 1.0}
+	for range samples {
+		v := Random[Vec3]()
+		// Check each component is in [0,1)
+		for i := range 3 {
+			if !expected.Contains(v[i]) {
+				t.Errorf("Random() component %d = %v, want in [0,1)", i, v[i])
+			}
+		}
+		// Collect unique samples
+		results.Add(v)
+	}
+	if results.Len() != samples {
+		t.Errorf("Random() produced %d unique samples, want %d", results.Len(), samples)
 	}
 }
 

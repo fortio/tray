@@ -166,6 +166,7 @@ func RandomUnitVector[T ~[3]float64]() T {
 	}
 }
 
+// RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.
 func RandomOnHemisphere[T ~[3]float64](normal T) T {
 	onUnitSphere := RandomUnitVector[T]()
 	if Dot(onUnitSphere, normal) > 0.0 { // In the same hemisphere as the normal

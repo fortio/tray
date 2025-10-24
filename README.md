@@ -32,7 +32,7 @@ docker run --network host -v ~/.tray:/home/user/.tray -ti fortio/tray
 
 ## Usage
 
-Hit a key to hide the splash info. After which any key cause a re-render, 'Q' to quit.
+Hit a key to hide the splash info. After which any key causes a re-render, 'Q' to quit.
 
 ```
 tray help

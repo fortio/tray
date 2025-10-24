@@ -284,3 +284,13 @@ func TestClamp(t *testing.T) {
 		})
 	}
 }
+
+func TestDot(t *testing.T) {
+	v1 := Vec3{1, 2, 3}
+	v2 := Vec3{4, 5, 6}
+	result := Dot(v1, v2)
+	expected := 32.0 // 1*4 + 2*5 + 3*6
+	if result != expected {
+		t.Errorf("Dot() = %v, want %v", result, expected)
+	}
+}

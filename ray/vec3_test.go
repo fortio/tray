@@ -24,6 +24,11 @@ func TestVec3Sub(t *testing.T) {
 	if result != expected {
 		t.Errorf("Sub() = %v, want %v", result, expected)
 	}
+	u = Neg(u)
+	result2 := Add(v, u)
+	if result2 != expected {
+		t.Errorf("Add with Neg() = %v, want %v", result2, expected)
+	}
 }
 
 func TestAddMultiple(t *testing.T) {

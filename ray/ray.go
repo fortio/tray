@@ -15,21 +15,52 @@ type Tracer struct {
 	imageData     *image.RGBA
 }
 
+type HitRecord struct {
+	Point     Vec3
+	Normal    Vec3
+	T         float64
+	FrontFace bool
+}
+
+func (hr *HitRecord) SetFaceNormal(r Ray, outwardNormal Vec3) {
+	hr.FrontFace = Dot(r.Direction, outwardNormal) < 0
+	if hr.FrontFace {
+		hr.Normal = outwardNormal
+	} else {
+		hr.Normal = Neg(outwardNormal)
+	}
+}
+
+type Hittable interface {
+	Hit(r Ray, tMin, tMax float64) (bool, HitRecord)
+}
+
 type Sphere struct {
 	Center Vec3
 	Radius float64
 }
 
-func (s *Sphere) Hit(r Ray) float64 {
+func (s *Sphere) Hit(r Ray, tMin, tMax float64) (bool, HitRecord) {
 	oc := Sub(s.Center, r.Origin)
 	a := LengthSquared(r.Direction)
 	h := Dot(r.Direction, oc)
 	c := LengthSquared(oc) - s.Radius*s.Radius
 	discriminant := h*h - a*c
 	if discriminant < 0 {
-		return -1
+		return false, HitRecord{}
 	}
-	return (h - math.Sqrt(discriminant)) / a
+	sqrtD := math.Sqrt(discriminant)
+	root := (h - sqrtD) / a
+	if root < tMin || root > tMax {
+		root = (h + sqrtD) / a
+		if root < tMin || root > tMax {
+			return false, HitRecord{}
+		}
+	}
+	hr := HitRecord{Point: r.At(root), T: root}
+	outwardNormal := SDiv(Sub(hr.Point, s.Center), s.Radius)
+	hr.SetFaceNormal(r, outwardNormal)
+	return true, hr
 }
 
 type Scene struct {
@@ -38,8 +69,8 @@ type Scene struct {
 }
 
 func (s *Scene) TraceRay(r Ray) color.RGBA {
-	if v := s.S.Hit(r); v > 0 {
-		N := Unit(r.At(v).Minus(Vec3{0, 0, -1}))
+	if hit, hr := s.S.Hit(r, 0.001, math.MaxFloat64); hit {
+		N := Unit(r.At(hr.T).Minus(Vec3{0, 0, -1}))
 		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
 	}
 	unit := Unit(r.Direction)

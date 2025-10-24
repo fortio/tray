@@ -95,6 +95,11 @@ func Unit[T ~[3]float64](v T) T {
 	return T{v[0] / l, v[1] / l, v[2] / l}
 }
 
+// Neg: returns the negation of the vector.
+func Neg[T ~[3]float64](v T) T {
+	return T{-v[0], -v[1], -v[2]}
+}
+
 // X: returns the X component.
 func (v Vec3) X() float64 {
 	return v[0]

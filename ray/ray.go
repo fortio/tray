@@ -198,7 +198,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	upperLeftCorner := t.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
 	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
 
-	div := 1.0 / float64(t.NumRaysPerPixel)
+	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
+	multipleRays := t.NumRaysPerPixel > 1
 
 	// Parallel rendering: divide work into horizontal bands
 	var wg sync.WaitGroup
@@ -207,25 +208,23 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	startY := 0
 	for i := range t.NumWorkers {
 		// Distribute remainder rows to first workers (one extra row each)
-		rowsForThisWorker := rowsPerWorker
+		endY := startY + rowsPerWorker
 		if i < remainder {
-			rowsForThisWorker++
+			endY++
 		}
-		endY := startY + rowsForThisWorker
 		wg.Add(1)
 		go func(yStart, yEnd int) {
 			defer wg.Done()
 			//nolint:gosec // not crypto use.
-			rng := rand.New(rand.NewPCG(uint64(yStart), uint64(yEnd)))
-			deltaX := 0.0
-			deltaY := 0.0
+			rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 			for y := yStart; y < yEnd; y++ {
 				for x := range t.width {
 					// Compute ray for pixel (x, y)
 					// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
 					colorSum := ColorF{0, 0, 0}
 					for range t.NumRaysPerPixel {
-						if t.NumRaysPerPixel > 1 {
+						deltaX, deltaY := 0.0, 0.0
+						if multipleRays {
 							deltaX, deltaY = SampleDiscRejRng(rng, t.RayRadius)
 						}
 						pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
@@ -234,7 +233,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 						color := scene.RayColor(ray, t.MaxDepth)
 						colorSum = Add(colorSum, color)
 					}
-					avgColor := SMul(colorSum, div)
+					avgColor := SMul(colorSum, colorSumDiv)
 					t.imageData.SetRGBA(x, y, avgColor.ToSRGBA())
 				}
 			}

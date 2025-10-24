@@ -172,7 +172,7 @@ func RandomOnHemisphere[T ~[3]float64](normal T) T {
 	return Neg(onUnitSphere)
 }
 
-// X: returns the X com	ponent.
+// X: returns the X component.
 func (v Vec3) X() float64 {
 	return v[0]
 }

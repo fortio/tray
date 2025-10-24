@@ -89,7 +89,7 @@ func (s *Scene) RayColor(r Ray, depth int) ColorF {
 		return ColorF{0, 0, 0}
 	}
 	if hit, hr := s.Hit(r, FrontEpsilon); hit {
-		direction := RandomOnHemisphere(hr.Normal)
+		direction := Add(hr.Normal, RandomUnitVector[Vec3]())
 		newRay := Ray{Origin: hr.Point, Direction: direction}
 		return SDiv(s.RayColor(newRay, depth-1), 2.0)
 	}

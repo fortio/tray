@@ -5,6 +5,7 @@ package ray
 import (
 	"image"
 	"image/color"
+	"math"
 )
 
 // Tracer represents a ray tracing engine.
@@ -19,13 +20,16 @@ type Sphere struct {
 	Radius float64
 }
 
-func (s *Sphere) Hit(r Ray) bool {
+func (s *Sphere) Hit(r Ray) float64 {
 	oc := Sub(r.Origin, s.Center)
 	a := Dot(r.Direction, r.Direction)
 	b := 2.0 * Dot(oc, r.Direction)
 	c := Dot(oc, oc) - s.Radius*s.Radius
 	discriminant := b*b - 4*a*c
-	return discriminant > 0
+	if discriminant < 0 {
+		return -1
+	}
+	return (-b - math.Sqrt(discriminant)) / (2.0 * a)
 }
 
 type Scene struct {
@@ -34,8 +38,9 @@ type Scene struct {
 }
 
 func (s *Scene) TraceRay(r Ray) color.RGBA {
-	if s.S.Hit(r) {
-		return color.RGBA{255, 20, 30, 255} // Red for hit
+	if v := s.S.Hit(r); v > 0 {
+		N := Unit(r.At(v).Minus(Vec3{0, 0, -1}))
+		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
 	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)

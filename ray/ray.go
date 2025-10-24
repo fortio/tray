@@ -10,9 +10,11 @@ import (
 
 // Tracer represents a ray tracing engine.
 type Tracer struct {
-	// Fields for ray tracing state would go here.
-	width, height int
-	imageData     *image.RGBA
+	Camera         Vec3
+	FocalLength    float64
+	ViewportHeight float64
+	width, height  int
+	imageData      *image.RGBA
 }
 
 type HitRecord struct {
@@ -82,7 +84,7 @@ type Scene struct {
 	Objects []Hittable
 }
 
-func (s *Scene) TraceRay(r Ray) color.RGBA {
+func (s *Scene) RayColor(r Ray) color.RGBA {
 	if hit, hr := s.Hit(r, Front); hit {
 		N := hr.Normal
 		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
@@ -109,32 +111,38 @@ func New(width, height int) *Tracer {
 func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
 		scene = &Scene{
+			// Default scene with two spheres.
 			Objects: []Hittable{
 				&Sphere{Center: Vec3{0, 0, -1}, Radius: 0.5},
 				&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100},
 			},
 		}
 	}
-	// Implementation of ray tracing rendering.
-	focalLength := 1.0
-	camera := Vec3{0, 0, 0}
-	viewportHeight := 2.0
+	// Default camera / viewport setup
+	if t.FocalLength == 0 {
+		t.FocalLength = 1.0
+	}
+	if t.ViewportHeight == 0 {
+		t.ViewportHeight = 2.0
+	}
+	// And zero value (0,0,0) for Camera is the right default.
+
 	aspectRatio := float64(t.width) / float64(t.height)
-	viewportWidth := aspectRatio * viewportHeight
+	viewportWidth := aspectRatio * t.ViewportHeight
 	horizontal := XYZ(viewportWidth, 0, 0)
-	vertical := XYZ(0, -viewportHeight, 0) // y axis is inverted in image vs our world.
+	vertical := XYZ(0, -t.ViewportHeight, 0) // y axis is inverted in image vs our world.
 	pixelXVector := SDiv(horizontal, float64(t.width))
 	pixelYVector := SDiv(vertical, float64(t.height))
-	upperLeftCorner := camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, focalLength})
+	upperLeftCorner := t.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
 	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
 
 	for y := range t.height {
 		for x := range t.width {
 			// Compute ray for pixel (x, y)
 			pixel := pixel00.Plus(pixelXVector.Times(float64(x)), pixelYVector.Times(float64(y)))
-			rayDirection := pixel.Minus(camera)
-			ray := Ray{Origin: camera, Direction: rayDirection}
-			color := scene.TraceRay(ray)
+			rayDirection := pixel.Minus(t.Camera)
+			ray := Ray{Origin: t.Camera, Direction: rayDirection}
+			color := scene.RayColor(ray)
 			t.imageData.SetRGBA(x, y, color)
 		}
 	}
@@ -149,25 +157,3 @@ type Ray struct {
 func (r *Ray) At(t float64) Vec3 {
 	return Add(r.Origin, SMul(r.Direction, t))
 }
-
-type Interval struct {
-	Start, End float64
-}
-
-func (i Interval) Length() float64 {
-	return i.End - i.Start
-}
-
-func (i Interval) Contains(t float64) bool {
-	return t >= i.Start && t <= i.End
-}
-
-func (i Interval) Surrounds(t float64) bool {
-	return t > i.Start && t < i.End
-}
-
-var (
-	Empty    = Interval{Start: math.Inf(1), End: math.Inf(-1)}
-	Universe = Interval{Start: math.Inf(-1), End: math.Inf(1)}
-	Front    = Interval{Start: 0, End: math.Inf(1)}
-)

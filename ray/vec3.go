@@ -122,18 +122,47 @@ func XYZ(x, y, z float64) Vec3 {
 
 // ToRGBA converts ColorF to color.RGBA, clamping values to [0,1].
 func (c ColorF) ToRGBA() color.RGBA {
-	r := uint8(clamp(c[0], 0, 1) * 255)
-	g := uint8(clamp(c[1], 0, 1) * 255)
-	b := uint8(clamp(c[2], 0, 1) * 255)
+	r := uint8(ZeroOne.Clamp(c[0]) * 255)
+	g := uint8(ZeroOne.Clamp(c[1]) * 255)
+	b := uint8(ZeroOne.Clamp(c[2]) * 255)
 	return color.RGBA{R: r, G: g, B: b, A: 255}
 }
 
-func clamp(x, minV, maxV float64) float64 {
-	if x < minV {
-		return minV
-	}
-	if x > maxV {
-		return maxV
-	}
-	return x
+// Interval represents a closed interval [Start, End] on the real number line.
+type Interval struct {
+	Start, End float64
 }
+
+// Length returns the length of the interval (End - Start).
+func (i Interval) Length() float64 {
+	return i.End - i.Start
+}
+
+// Contains returns true if t is within the interval [Start, End] (inclusive).
+func (i Interval) Contains(t float64) bool {
+	return t >= i.Start && t <= i.End
+}
+
+// Surrounds returns true if t is strictly within the interval (Start, End) (exclusive).
+func (i Interval) Surrounds(t float64) bool {
+	return t > i.Start && t < i.End
+}
+
+// Clamp returns t clamped to the interval [Start, End].
+// If t < Start, returns Start. If t > End, returns End. Otherwise returns t.
+func (i Interval) Clamp(t float64) float64 {
+	if t < i.Start {
+		return i.Start
+	}
+	if t > i.End {
+		return i.End
+	}
+	return t
+}
+
+var (
+	Empty    = Interval{Start: math.Inf(1), End: math.Inf(-1)}
+	Universe = Interval{Start: math.Inf(-1), End: math.Inf(1)}
+	Front    = Interval{Start: 0, End: math.Inf(1)}
+	ZeroOne  = Interval{Start: 0, End: 1}
+)

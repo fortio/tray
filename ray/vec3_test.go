@@ -542,7 +542,7 @@ func TestRandomUnitVectorDistribution(t *testing.T) {
 	}{
 		{"RandomUnitVectorRej", RandomUnitVectorRej[Vec3]},
 		{"RandomUnitVectorAngle", RandomUnitVectorAngle[Vec3]},
-		{"RandomUnitVectorNorm", RandomUnitVector[Vec3]},
+		{"RandomUnitVector (Norm method)", RandomUnitVector[Vec3]},
 	}
 
 	for _, tt := range tests {
@@ -678,7 +678,7 @@ func TestRandomUnitVectorNoBias(t *testing.T) {
 		}
 	})
 
-	t.Run("RejectionMethod_ReasonableAcceptance", func(*testing.T) {
+	t.Run("RejectionMethod_ReasonableAcceptance", func(_ *testing.T) {
 		// The rejection method should accept points in a sphere inscribed in a cube
 		// Volume of sphere / volume of cube = (4/3)πr³ / (2r)³ = π/6 ≈ 0.524
 		// So we expect roughly 52% acceptance rate

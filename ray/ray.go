@@ -5,6 +5,7 @@ package ray
 import (
 	"image"
 	"image/color"
+	"math"
 )
 
 // Tracer represents a ray tracing engine.
@@ -14,13 +15,78 @@ type Tracer struct {
 	imageData     *image.RGBA
 }
 
+type HitRecord struct {
+	Point     Vec3
+	Normal    Vec3
+	T         float64
+	FrontFace bool
+}
+
+func (hr *HitRecord) SetFaceNormal(r Ray, outwardNormal Vec3) {
+	hr.FrontFace = Dot(r.Direction, outwardNormal) < 0
+	if hr.FrontFace {
+		hr.Normal = outwardNormal
+	} else {
+		hr.Normal = Neg(outwardNormal)
+	}
+}
+
+type Hittable interface {
+	Hit(r Ray, interval Interval) (bool, HitRecord)
+}
+
+func (s *Scene) Hit(r Ray, interval Interval) (bool, HitRecord) {
+	hitAnything := false
+	closestSoFar := interval.End
+	var tempRec HitRecord
+
+	for _, object := range s.Objects {
+		if hit, rec := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}); hit {
+			hitAnything = true
+			closestSoFar = rec.T
+			tempRec = rec
+		}
+	}
+	return hitAnything, tempRec
+}
+
+type Sphere struct {
+	Center Vec3
+	Radius float64
+}
+
+func (s *Sphere) Hit(r Ray, i Interval) (bool, HitRecord) {
+	oc := Sub(s.Center, r.Origin)
+	a := LengthSquared(r.Direction)
+	h := Dot(r.Direction, oc)
+	c := LengthSquared(oc) - s.Radius*s.Radius
+	discriminant := h*h - a*c
+	if discriminant < 0 {
+		return false, HitRecord{}
+	}
+	sqrtD := math.Sqrt(discriminant)
+	root := (h - sqrtD) / a
+	if !i.Surrounds(root) {
+		root = (h + sqrtD) / a
+		if !i.Surrounds(root) {
+			return false, HitRecord{}
+		}
+	}
+	hr := HitRecord{Point: r.At(root), T: root}
+	outwardNormal := SDiv(Sub(hr.Point, s.Center), s.Radius)
+	hr.SetFaceNormal(r, outwardNormal)
+	return true, hr
+}
+
 type Scene struct {
-	// Fields defining the scene to be rendered.
+	Objects []Hittable
 }
 
 func (s *Scene) TraceRay(r Ray) color.RGBA {
-	// Placeholder implementation: return a color based on ray direction.
-
+	if hit, hr := s.Hit(r, Front); hit {
+		N := hr.Normal
+		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
+	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
 	white := ColorF{1.0, 1.0, 1.0}
@@ -40,11 +106,16 @@ func New(width, height int) *Tracer {
 }
 
 // Render performs the ray tracing and returns the resulting image data.
-func (t *Tracer) Render(scene Scene) *image.RGBA {
+func (t *Tracer) Render(scene *Scene) *image.RGBA {
+	if scene == nil {
+		scene = &Scene{
+			Objects: []Hittable{
+				&Sphere{Center: Vec3{0, 0, -1}, Radius: 0.5},
+				&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100},
+			},
+		}
+	}
 	// Implementation of ray tracing rendering.
-	_ = scene                            // to avoid unused variable warning
-	t.imageData.Set(10, 10, image.White) // Placeholder operation
-
 	focalLength := 1.0
 	camera := Vec3{0, 0, 0}
 	viewportHeight := 2.0
@@ -78,3 +149,25 @@ type Ray struct {
 func (r *Ray) At(t float64) Vec3 {
 	return Add(r.Origin, SMul(r.Direction, t))
 }
+
+type Interval struct {
+	Start, End float64
+}
+
+func (i Interval) Length() float64 {
+	return i.End - i.Start
+}
+
+func (i Interval) Contains(t float64) bool {
+	return t >= i.Start && t <= i.End
+}
+
+func (i Interval) Surrounds(t float64) bool {
+	return t > i.Start && t < i.End
+}
+
+var (
+	Empty    = Interval{Start: math.Inf(1), End: math.Inf(-1)}
+	Universe = Interval{Start: math.Inf(-1), End: math.Inf(1)}
+	Front    = Interval{Start: 0, End: math.Inf(1)}
+)

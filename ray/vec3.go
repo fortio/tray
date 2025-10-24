@@ -47,6 +47,11 @@ func (v Vec3) Minus(u0 Vec3, more ...Vec3) Vec3 {
 	return SubMultiple(v, u0, more...)
 }
 
+// Dot: dot product of two vectors.
+func Dot[T ~[3]float64](u, v T) float64 {
+	return u[0]*v[0] + u[1]*v[1] + u[2]*v[2]
+}
+
 // Plus adds one or more vectors to v.
 // Returns v + others[0] + others[1] + ...
 // This is a convenience method wrapper around AddMultiple.
@@ -75,7 +80,12 @@ func SDiv[T ~[3]float64](v T, t float64) T {
 
 // Length: returns the length of the vector.
 func Length[T ~[3]float64](v T) float64 {
-	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+	return math.Sqrt(LengthSquared(v))
+}
+
+// LengthSquared: returns the squared length of the vector.
+func LengthSquared[T ~[3]float64](v T) float64 {
+	return v[0]*v[0] + v[1]*v[1] + v[2]*v[2]
 }
 
 // Unit: returns the unit vector in the direction of v
@@ -83,6 +93,11 @@ func Length[T ~[3]float64](v T) float64 {
 func Unit[T ~[3]float64](v T) T {
 	l := Length(v)
 	return T{v[0] / l, v[1] / l, v[2] / l}
+}
+
+// Neg: returns the negation of the vector.
+func Neg[T ~[3]float64](v T) T {
+	return T{-v[0], -v[1], -v[2]}
 }
 
 // X: returns the X component.

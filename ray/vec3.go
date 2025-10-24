@@ -3,6 +3,7 @@ package ray
 import (
 	"image/color"
 	"math"
+	"math/rand/v2"
 )
 
 // Vec3 represents a 3D vector.
@@ -100,7 +101,70 @@ func Neg[T ~[3]float64](v T) T {
 	return T{-v[0], -v[1], -v[2]}
 }
 
-// X: returns the X component.
+// Random generates a random vector with each component in [0,1).
+func Random[T ~[3]float64]() T {
+	return T{rand.Float64(), rand.Float64(), rand.Float64()} //nolint:gosec // not crypto use.
+}
+
+// RandomInRange generates a random vector with each component in the Interval
+// excluding the end.
+//
+//nolint:gosec // not crypto use.
+func RandomInRange[T ~[3]float64](intv Interval) T {
+	minV := intv.Start
+	l := intv.Length()
+	return T{
+		minV + l*rand.Float64(),
+		minV + l*rand.Float64(),
+		minV + l*rand.Float64(),
+	}
+}
+
+// RandomUnitVectorRej generates a random unit vector using rejection sampling.
+// It repeatedly samples random vectors in the cube [-1,1)^3 until one is
+// found inside the unit sphere, then normalizes it to length 1.
+// This is the slowest of the three methods provided here.
+func RandomUnitVectorRej[T ~[3]float64]() T {
+	for {
+		r := RandomInRange[T](Interval{Start: -1, End: 1})
+		lensq := LengthSquared(r)
+		if lensq > 1e-12 && lensq <= 1 {
+			return SDiv(r, math.Sqrt(lensq))
+		}
+	}
+}
+
+// RandomUnitVectorAngle generates a random unit vector using spherical coordinates.
+// This method is faster than rejection sampling but involves trigonometric functions.
+//
+//nolint:gosec // not crypto use.
+func RandomUnitVectorAngle[T ~[3]float64]() T {
+	angle := rand.Float64() * 2 * math.Pi
+	z := rand.Float64()*2 - 1 // in [-1,1)
+	r := math.Sqrt(1 - z*z)
+	x := r * math.Cos(angle)
+	y := r * math.Sin(angle)
+	return T{x, y, z}
+}
+
+// RandomUnitVector generates a random unit vector using normal distribution.
+// It is the fastest of the three methods provided here and produces uniformly
+// distributed points on the unit sphere. Being both correct and most efficient,
+// this is the preferred method for generating random unit vectors and thus gets
+// the default name.
+//
+//nolint:gosec // not crypto use.
+func RandomUnitVector[T ~[3]float64]() T {
+	for {
+		x, y, z := rand.NormFloat64(), rand.NormFloat64(), rand.NormFloat64()
+		r := math.Sqrt(x*x + y*y + z*z)
+		if r > 1e-12 {
+			return T{x / r, y / r, z / r}
+		}
+	}
+}
+
+// X: returns the X com	ponent.
 func (v Vec3) X() float64 {
 	return v[0]
 }

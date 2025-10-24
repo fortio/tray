@@ -247,16 +247,17 @@ func TestFloatColorToRGBA(t *testing.T) {
 		{"red", ColorF{1, 0, 0}, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
 		{"green", ColorF{0, 1, 0}, color.RGBA{R: 0, G: 255, B: 0, A: 255}},
 		{"blue", ColorF{0, 0, 1}, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
-		{"mid gray", ColorF{0.5, 0.5, 0.5}, color.RGBA{R: 127, G: 127, B: 127, A: 255}},
+		// #bcbcbc vs #7f7f7f
+		{"mid gray", ColorF{0.5, 0.5, 0.5}, color.RGBA{R: 188, G: 188, B: 188, A: 255}}, // mid gray in sRGB
 		{"clamped above", ColorF{1.5, 2.0, 3.0}, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
 		{"clamped below", ColorF{-1.0, -0.5, -2.0}, color.RGBA{R: 0, G: 0, B: 0, A: 255}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.c.ToRGBA()
+			result := tt.c.ToSRGBA()
 			if result != tt.expected {
-				t.Errorf("ToRGBA() = %v, want %v", result, tt.expected)
+				t.Errorf("ToSRGBA() = %v, want %v", result, tt.expected)
 			}
 		})
 	}
@@ -692,9 +693,44 @@ func TestRandomUnitVectorNoBias(t *testing.T) {
 	})
 }
 
+// TestRandomOnHemisphere verifies that RandomOnHemisphere generates vectors
+// on the correct hemisphere relative to the normal.
+func TestRandomOnHemisphere(t *testing.T) {
+	tests := []struct {
+		name   string
+		normal Vec3
+	}{
+		{"positive Z", Vec3{0, 0, 1}},
+		{"negative Z", Vec3{0, 0, -1}},
+		{"positive Y", Vec3{0, 1, 0}},
+		{"diagonal", Unit(Vec3{1, 1, 1})},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			const samples = 100
+			for range samples {
+				v := RandomOnHemisphere(tt.normal)
+
+				// Verify it's a unit vector
+				length := Length(v)
+				if math.Abs(length-1.0) > 1e-9 {
+					t.Errorf("Length() = %.15f, want 1.0", length)
+				}
+
+				// Verify it's in the same hemisphere as the normal
+				dot := Dot(v, tt.normal)
+				if dot < 0 {
+					t.Errorf("Dot(v, normal) = %.15f, want >= 0 (same hemisphere)", dot)
+				}
+			}
+		})
+	}
+}
+
 // Benchmarks for comparing the three methods
 
-func BenchmarkRandomUnitVectorRejection(b *testing.B) {
+func BenchmarkRandomUnitVector(b *testing.B) {
 	for range b.N {
 		_ = RandomUnitVectorRej[Vec3]()
 	}

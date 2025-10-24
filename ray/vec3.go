@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"math"
 	"math/rand/v2"
+
+	"fortio.org/terminal/ansipixels/tcolor"
 )
 
 // Vec3 represents a 3D vector.
@@ -164,7 +166,16 @@ func RandomUnitVector[T ~[3]float64]() T {
 	}
 }
 
-// X: returns the X com	ponent.
+// RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.
+func RandomOnHemisphere[T ~[3]float64](normal T) T {
+	onUnitSphere := RandomUnitVector[T]()
+	if Dot(onUnitSphere, normal) > 0.0 { // In the same hemisphere as the normal
+		return onUnitSphere
+	}
+	return Neg(onUnitSphere)
+}
+
+// X: returns the X component.
 func (v Vec3) X() float64 {
 	return v[0]
 }
@@ -184,12 +195,14 @@ func XYZ(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
-// ToRGBA converts ColorF to color.RGBA, clamping values to [0,1].
-func (c ColorF) ToRGBA() color.RGBA {
-	r := uint8(ZeroOne.Clamp(c[0]) * 255)
-	g := uint8(ZeroOne.Clamp(c[1]) * 255)
-	b := uint8(ZeroOne.Clamp(c[2]) * 255)
-	return color.RGBA{R: r, G: g, B: b, A: 255}
+// ToSRGBA from a linear ColorF to SRGB color.RGBA, clamping values to [0,1].
+func (c ColorF) ToSRGBA() color.RGBA {
+	return color.RGBA{
+		R: tcolor.LinearToSrgb(c[0]),
+		G: tcolor.LinearToSrgb(c[1]),
+		B: tcolor.LinearToSrgb(c[2]),
+		A: 255,
+	}
 }
 
 // Interval represents a closed interval [Start, End] on the real number line.
@@ -225,8 +238,9 @@ func (i Interval) Clamp(t float64) float64 {
 }
 
 var (
-	Empty    = Interval{Start: math.Inf(1), End: math.Inf(-1)}
-	Universe = Interval{Start: math.Inf(-1), End: math.Inf(1)}
-	Front    = Interval{Start: 0, End: math.Inf(1)}
-	ZeroOne  = Interval{Start: 0, End: 1}
+	Empty        = Interval{Start: math.Inf(1), End: math.Inf(-1)}
+	Universe     = Interval{Start: math.Inf(-1), End: math.Inf(1)}
+	Front        = Interval{Start: 0, End: math.Inf(1)}
+	FrontEpsilon = Interval{Start: 1e-6, End: math.Inf(1)}
+	ZeroOne      = Interval{Start: 0, End: 1}
 )

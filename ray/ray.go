@@ -4,17 +4,20 @@ package ray
 
 import (
 	"image"
-	"image/color"
 	"math"
+	"math/rand/v2"
 )
 
 // Tracer represents a ray tracing engine.
 type Tracer struct {
-	Camera         Vec3
-	FocalLength    float64
-	ViewportHeight float64
-	width, height  int
-	imageData      *image.RGBA
+	Camera          Vec3
+	FocalLength     float64
+	ViewportHeight  float64
+	MaxDepth        int
+	NumRaysPerPixel int
+	RayRadius       float64
+	width, height   int
+	imageData       *image.RGBA
 }
 
 type HitRecord struct {
@@ -84,17 +87,21 @@ type Scene struct {
 	Objects []Hittable
 }
 
-func (s *Scene) RayColor(r Ray) color.RGBA {
-	if hit, hr := s.Hit(r, Front); hit {
-		N := hr.Normal
-		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
+func (s *Scene) RayColor(r Ray, depth int) ColorF {
+	if depth <= 0 {
+		return ColorF{0, 0, 0}
+	}
+	if hit, hr := s.Hit(r, FrontEpsilon); hit {
+		direction := Add(hr.Normal, RandomUnitVector[Vec3]())
+		newRay := Ray{Origin: hr.Point, Direction: direction}
+		return SMul(s.RayColor(newRay, depth-1), 0.5)
 	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
 	white := ColorF{1.0, 1.0, 1.0}
-	blue := ColorF{0.5, 0.7, 1.0}
+	blue := ColorF{0.4, 0.65, 1.0}
 	blend := Add(SMul(white, 1.0-a), SMul(blue, a))
-	return blend.ToRGBA()
+	return blend
 }
 
 // New creates and initializes a new Tracer.
@@ -105,6 +112,33 @@ func New(width, height int) *Tracer {
 		height:    height,
 		imageData: image.NewRGBA(image.Rect(0, 0, width, height)),
 	}
+}
+
+// SampleDiscRej returns a random point (x,y) within a disc of radius r.
+// Rejection sampling method.
+//
+//nolint:gosec // not crypto use.
+func SampleDiscRej(r float64) (x, y float64) {
+	for {
+		x = 2*rand.Float64() - 1.0
+		y = 2*rand.Float64() - 1.0
+		if x*x+y*y <= 1 {
+			break
+		}
+	}
+	return r * x, r * y
+}
+
+// SampleDiscAngle returns a random point (x,y) within a disc of radius r.
+// Angle method.
+//
+//nolint:gosec // not crypto use.
+func SampleDiscAngle(r float64) (x, y float64) {
+	theta := 2.0 * math.Pi * rand.Float64()
+	rad := r * math.Sqrt(rand.Float64())
+	x = rad * math.Cos(theta)
+	y = rad * math.Sin(theta)
+	return x, y
 }
 
 // Render performs the ray tracing and returns the resulting image data.
@@ -119,11 +153,20 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		}
 	}
 	// Default camera / viewport setup
-	if t.FocalLength == 0 {
+	if t.FocalLength <= 0 {
 		t.FocalLength = 1.0
 	}
-	if t.ViewportHeight == 0 {
+	if t.ViewportHeight <= 0 {
 		t.ViewportHeight = 2.0
+	}
+	if t.MaxDepth <= 0 {
+		t.MaxDepth = 10
+	}
+	if t.NumRaysPerPixel <= 0 {
+		t.NumRaysPerPixel = 1
+	}
+	if t.RayRadius <= 0 {
+		t.RayRadius = 0.5
 	}
 	// And zero value (0,0,0) for Camera is the right default.
 
@@ -136,14 +179,26 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	upperLeftCorner := t.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
 	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
 
+	deltaX := 0.0
+	deltaY := 0.0
+	div := 1.0 / float64(t.NumRaysPerPixel)
 	for y := range t.height {
 		for x := range t.width {
 			// Compute ray for pixel (x, y)
-			pixel := pixel00.Plus(pixelXVector.Times(float64(x)), pixelYVector.Times(float64(y)))
-			rayDirection := pixel.Minus(t.Camera)
-			ray := Ray{Origin: t.Camera, Direction: rayDirection}
-			color := scene.RayColor(ray)
-			t.imageData.SetRGBA(x, y, color)
+			// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
+			colorSum := ColorF{0, 0, 0}
+			for range t.NumRaysPerPixel {
+				if t.NumRaysPerPixel > 1 {
+					deltaX, deltaY = SampleDiscRej(t.RayRadius)
+				}
+				pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
+				rayDirection := pixel.Minus(t.Camera)
+				ray := Ray{Origin: t.Camera, Direction: rayDirection}
+				color := scene.RayColor(ray, t.MaxDepth)
+				colorSum = Add(colorSum, color)
+			}
+			avgColor := SMul(colorSum, div)
+			t.imageData.SetRGBA(x, y, avgColor.ToSRGBA())
 		}
 	}
 	return t.imageData

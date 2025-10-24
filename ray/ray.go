@@ -155,35 +155,3 @@ type Ray struct {
 func (r *Ray) At(t float64) Vec3 {
 	return Add(r.Origin, SMul(r.Direction, t))
 }
-
-type Interval struct {
-	Start, End float64
-}
-
-func (i Interval) Length() float64 {
-	return i.End - i.Start
-}
-
-func (i Interval) Contains(t float64) bool {
-	return t >= i.Start && t <= i.End
-}
-
-func (i Interval) Surrounds(t float64) bool {
-	return t > i.Start && t < i.End
-}
-
-func (i Interval) Clamp(t float64) float64 {
-	if t < i.Start {
-		return i.Start
-	}
-	if t > i.End {
-		return i.End
-	}
-	return t
-}
-
-var (
-	Empty    = Interval{Start: math.Inf(1), End: math.Inf(-1)}
-	Universe = Interval{Start: math.Inf(-1), End: math.Inf(1)}
-	Front    = Interval{Start: 0, End: math.Inf(1)}
-)

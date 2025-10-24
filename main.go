@@ -31,6 +31,7 @@ func Main() int {
 	}
 	defer ap.Restore()
 	ap.SyncBackgroundColor()
+	var resized *image.RGBA
 	ap.OnResize = func() error {
 		ap.StartSyncMode()
 		ap.ClearScreen()
@@ -38,7 +39,7 @@ func Main() int {
 		rt := ray.New(imgWidth, imgHeight) // supersample x2
 		img := rt.Render(nil)              // default scene
 		// Downscale image:
-		resized := img
+		resized = img
 		if supersample != 1 {
 			origBounds := img.Bounds()
 			resized = image.NewRGBA(image.Rect(0, 0, ap.W, ap.H*2))
@@ -66,7 +67,9 @@ func Main() int {
 			log.Infof("Exiting on %q", c)
 			return false
 		default:
-			log.Infof("Input %q", c)
+			log.Debugf("Input %q", c)
+			ap.HideCursor()
+			_ = ap.ShowScaledImage(resized)
 		}
 		return true
 	})

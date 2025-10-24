@@ -35,9 +35,10 @@ func Main() int {
 	ap.OnResize = func() error {
 		ap.StartSyncMode()
 		ap.ClearScreen()
+		// render at supersampled resolution
 		imgWidth, imgHeight := int(math.Round(supersample*float64(ap.W))), int(math.Round(supersample*float64(ap.H*2)))
-		rt := ray.New(imgWidth, imgHeight) // supersample x2
-		img := rt.Render(nil)              // default scene
+		rt := ray.New(imgWidth, imgHeight)
+		img := rt.Render(nil) // default scene
 		// Downscale image:
 		resized = img
 		if supersample != 1 {

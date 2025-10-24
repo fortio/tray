@@ -128,7 +128,7 @@ func RandomUnitVectorRej[T ~[3]float64]() T {
 	for {
 		r := RandomInRange[T](Interval{Start: -1, End: 1})
 		lensq := LengthSquared(r)
-		if lensq > 1e-12 && lensq <= 1 {
+		if lensq > 1e-48 && lensq <= 1 {
 			return SDiv(r, math.Sqrt(lensq))
 		}
 	}
@@ -158,7 +158,7 @@ func RandomUnitVector[T ~[3]float64]() T {
 	for {
 		x, y, z := rand.NormFloat64(), rand.NormFloat64(), rand.NormFloat64()
 		r := math.Sqrt(x*x + y*y + z*z)
-		if r > 1e-12 {
+		if r > 1e-24 {
 			return T{x / r, y / r, z / r}
 		}
 	}

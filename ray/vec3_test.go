@@ -692,9 +692,44 @@ func TestRandomUnitVectorNoBias(t *testing.T) {
 	})
 }
 
+// TestRandomOnHemisphere verifies that RandomOnHemisphere generates vectors
+// on the correct hemisphere relative to the normal.
+func TestRandomOnHemisphere(t *testing.T) {
+	tests := []struct {
+		name   string
+		normal Vec3
+	}{
+		{"positive Z", Vec3{0, 0, 1}},
+		{"negative Z", Vec3{0, 0, -1}},
+		{"positive Y", Vec3{0, 1, 0}},
+		{"diagonal", Unit(Vec3{1, 1, 1})},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			const samples = 100
+			for range samples {
+				v := RandomOnHemisphere(tt.normal)
+
+				// Verify it's a unit vector
+				length := Length(v)
+				if math.Abs(length-1.0) > 1e-9 {
+					t.Errorf("Length() = %.15f, want 1.0", length)
+				}
+
+				// Verify it's in the same hemisphere as the normal
+				dot := Dot(v, tt.normal)
+				if dot < 0 {
+					t.Errorf("Dot(v, normal) = %.15f, want >= 0 (same hemisphere)", dot)
+				}
+			}
+		})
+	}
+}
+
 // Benchmarks for comparing the three methods
 
-func BenchmarkRandomUnitVectorRejection(b *testing.B) {
+func BenchmarkRandomUnitVector(b *testing.B) {
 	for range b.N {
 		_ = RandomUnitVectorRej[Vec3]()
 	}

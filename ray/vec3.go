@@ -164,6 +164,14 @@ func RandomUnitVector[T ~[3]float64]() T {
 	}
 }
 
+func RandomOnHemisphere[T ~[3]float64](normal T) T {
+	onUnitSphere := RandomUnitVector[T]()
+	if Dot(onUnitSphere, normal) > 0.0 { // In the same hemisphere as the normal
+		return onUnitSphere
+	}
+	return Neg(onUnitSphere)
+}
+
 // X: returns the X com	ponent.
 func (v Vec3) X() float64 {
 	return v[0]

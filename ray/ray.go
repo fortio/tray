@@ -4,7 +4,6 @@ package ray
 
 import (
 	"image"
-	"image/color"
 	"math"
 )
 
@@ -84,17 +83,18 @@ type Scene struct {
 	Objects []Hittable
 }
 
-func (s *Scene) RayColor(r Ray) color.RGBA {
+func (s *Scene) RayColor(r Ray) ColorF {
 	if hit, hr := s.Hit(r, Front); hit {
-		N := hr.Normal
-		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
+		direction := RandomOnHemisphere(hr.Normal)
+		newRay := Ray{Origin: hr.Point, Direction: direction}
+		return SDiv(s.RayColor(newRay), 2.0)
 	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
 	white := ColorF{1.0, 1.0, 1.0}
 	blue := ColorF{0.5, 0.7, 1.0}
 	blend := Add(SMul(white, 1.0-a), SMul(blue, a))
-	return blend.ToRGBA()
+	return blend
 }
 
 // New creates and initializes a new Tracer.
@@ -142,7 +142,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 			pixel := pixel00.Plus(pixelXVector.Times(float64(x)), pixelYVector.Times(float64(y)))
 			rayDirection := pixel.Minus(t.Camera)
 			ray := Ray{Origin: t.Camera, Direction: rayDirection}
-			color := scene.RayColor(ray)
+			color := scene.RayColor(ray).ToRGBA()
 			t.imageData.SetRGBA(x, y, color)
 		}
 	}

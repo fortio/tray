@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"math"
 	"math/rand/v2"
+
+	"fortio.org/terminal/ansipixels/tcolor"
 )
 
 // Vec3 represents a 3D vector.
@@ -192,12 +194,14 @@ func XYZ(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
-// ToRGBA converts ColorF to color.RGBA, clamping values to [0,1].
-func (c ColorF) ToRGBA() color.RGBA {
-	r := uint8(ZeroOne.Clamp(c[0]) * 255)
-	g := uint8(ZeroOne.Clamp(c[1]) * 255)
-	b := uint8(ZeroOne.Clamp(c[2]) * 255)
-	return color.RGBA{R: r, G: g, B: b, A: 255}
+// ToSRGBA from a linear ColorF to SRGB color.RGBA, clamping values to [0,1].
+func (c ColorF) ToSRGBA() color.RGBA {
+	return color.RGBA{
+		R: tcolor.LinearToSrgb(c[0]),
+		G: tcolor.LinearToSrgb(c[1]),
+		B: tcolor.LinearToSrgb(c[2]),
+		A: 255,
+	}
 }
 
 // Interval represents a closed interval [Start, End] on the real number line.

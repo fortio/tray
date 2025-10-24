@@ -247,16 +247,17 @@ func TestFloatColorToRGBA(t *testing.T) {
 		{"red", ColorF{1, 0, 0}, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
 		{"green", ColorF{0, 1, 0}, color.RGBA{R: 0, G: 255, B: 0, A: 255}},
 		{"blue", ColorF{0, 0, 1}, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
-		{"mid gray", ColorF{0.5, 0.5, 0.5}, color.RGBA{R: 127, G: 127, B: 127, A: 255}},
+		// #bcbcbc vs #7f7f7f
+		{"mid gray", ColorF{0.5, 0.5, 0.5}, color.RGBA{R: 188, G: 188, B: 188, A: 255}}, // mid gray in sRGB
 		{"clamped above", ColorF{1.5, 2.0, 3.0}, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
 		{"clamped below", ColorF{-1.0, -0.5, -2.0}, color.RGBA{R: 0, G: 0, B: 0, A: 255}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.c.ToRGBA()
+			result := tt.c.ToSRGBA()
 			if result != tt.expected {
-				t.Errorf("ToRGBA() = %v, want %v", result, tt.expected)
+				t.Errorf("ToSRGBA() = %v, want %v", result, tt.expected)
 			}
 		})
 	}

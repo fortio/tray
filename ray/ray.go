@@ -91,12 +91,12 @@ func (s *Scene) RayColor(r Ray, depth int) ColorF {
 	if hit, hr := s.Hit(r, FrontEpsilon); hit {
 		direction := Add(hr.Normal, RandomUnitVector[Vec3]())
 		newRay := Ray{Origin: hr.Point, Direction: direction}
-		return SDiv(s.RayColor(newRay, depth-1), 2.0)
+		return SMul(s.RayColor(newRay, depth-1), 0.5)
 	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
 	white := ColorF{1.0, 1.0, 1.0}
-	blue := ColorF{0.5, 0.7, 1.0}
+	blue := ColorF{0.4, 0.65, 1.0}
 	blend := Add(SMul(white, 1.0-a), SMul(blue, a))
 	return blend
 }
@@ -149,7 +149,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 			pixel := pixel00.Plus(pixelXVector.Times(float64(x)), pixelYVector.Times(float64(y)))
 			rayDirection := pixel.Minus(t.Camera)
 			ray := Ray{Origin: t.Camera, Direction: rayDirection}
-			color := scene.RayColor(ray, t.MaxDepth).ToRGBA()
+			color := scene.RayColor(ray, t.MaxDepth).ToSRGBA()
 			t.imageData.SetRGBA(x, y, color)
 		}
 	}

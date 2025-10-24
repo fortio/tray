@@ -32,16 +32,16 @@ func (hr *HitRecord) SetFaceNormal(r Ray, outwardNormal Vec3) {
 }
 
 type Hittable interface {
-	Hit(r Ray, tMin, tMax float64) (bool, HitRecord)
+	Hit(r Ray, interval Interval) (bool, HitRecord)
 }
 
-func (s *Scene) Hit(r Ray, tMin, tMax float64) (bool, HitRecord) {
+func (s *Scene) Hit(r Ray, interval Interval) (bool, HitRecord) {
 	hitAnything := false
-	closestSoFar := tMax
+	closestSoFar := interval.End
 	var tempRec HitRecord
 
 	for _, object := range s.Objects {
-		if hit, rec := object.Hit(r, tMin, closestSoFar); hit {
+		if hit, rec := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}); hit {
 			hitAnything = true
 			closestSoFar = rec.T
 			tempRec = rec
@@ -55,7 +55,7 @@ type Sphere struct {
 	Radius float64
 }
 
-func (s *Sphere) Hit(r Ray, tMin, tMax float64) (bool, HitRecord) {
+func (s *Sphere) Hit(r Ray, i Interval) (bool, HitRecord) {
 	oc := Sub(s.Center, r.Origin)
 	a := LengthSquared(r.Direction)
 	h := Dot(r.Direction, oc)
@@ -66,9 +66,9 @@ func (s *Sphere) Hit(r Ray, tMin, tMax float64) (bool, HitRecord) {
 	}
 	sqrtD := math.Sqrt(discriminant)
 	root := (h - sqrtD) / a
-	if root < tMin || root > tMax {
+	if !i.Surrounds(root) {
 		root = (h + sqrtD) / a
-		if root < tMin || root > tMax {
+		if !i.Surrounds(root) {
 			return false, HitRecord{}
 		}
 	}
@@ -83,7 +83,7 @@ type Scene struct {
 }
 
 func (s *Scene) TraceRay(r Ray) color.RGBA {
-	if hit, hr := s.Hit(r, 0.001, math.MaxFloat64); hit {
+	if hit, hr := s.Hit(r, Front); hit {
 		N := hr.Normal
 		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
 	}
@@ -149,3 +149,25 @@ type Ray struct {
 func (r *Ray) At(t float64) Vec3 {
 	return Add(r.Origin, SMul(r.Direction, t))
 }
+
+type Interval struct {
+	Start, End float64
+}
+
+func (i Interval) Length() float64 {
+	return i.End - i.Start
+}
+
+func (i Interval) Contains(t float64) bool {
+	return t >= i.Start && t <= i.End
+}
+
+func (i Interval) Surrounds(t float64) bool {
+	return t > i.Start && t < i.End
+}
+
+var (
+	Empty    = Interval{Start: math.Inf(1), End: math.Inf(-1)}
+	Universe = Interval{Start: math.Inf(-1), End: math.Inf(1)}
+	Front    = Interval{Start: 0, End: math.Inf(1)}
+)

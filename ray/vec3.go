@@ -166,6 +166,18 @@ func RandomUnitVector[T ~[3]float64]() T {
 	}
 }
 
+// RandomUnitVectorRng generates a random unit vector using normal distribution
+// with the provided random source. This version allows per-goroutine rand sources.
+func RandomUnitVectorRng[T ~[3]float64](rng *rand.Rand) T {
+	for {
+		x, y, z := rng.NormFloat64(), rng.NormFloat64(), rng.NormFloat64()
+		r := math.Sqrt(x*x + y*y + z*z)
+		if r > 1e-24 {
+			return T{x / r, y / r, z / r}
+		}
+	}
+}
+
 // RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.
 func RandomOnHemisphere[T ~[3]float64](normal T) T {
 	onUnitSphere := RandomUnitVector[T]()

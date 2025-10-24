@@ -6,6 +6,8 @@ import (
 	"image"
 	"math"
 	"math/rand/v2"
+	"runtime"
+	"sync"
 )
 
 // Tracer represents a ray tracing engine.
@@ -16,6 +18,7 @@ type Tracer struct {
 	MaxDepth        int
 	NumRaysPerPixel int
 	RayRadius       float64
+	NumWorkers      int // Number of parallel workers; defaults to GOMAXPROCS if <= 0
 	width, height   int
 	imageData       *image.RGBA
 }
@@ -92,8 +95,8 @@ func (s *Scene) RayColor(r Ray, depth int) ColorF {
 		return ColorF{0, 0, 0}
 	}
 	if hit, hr := s.Hit(r, FrontEpsilon); hit {
-		direction := Add(hr.Normal, RandomUnitVector[Vec3]())
-		newRay := Ray{Origin: hr.Point, Direction: direction}
+		direction := Add(hr.Normal, RandomUnitVectorRng[Vec3](r.rng))
+		newRay := Ray{Origin: hr.Point, Direction: direction, rng: r.rng}
 		return SMul(s.RayColor(newRay, depth-1), 0.5)
 	}
 	unit := Unit(r.Direction)
@@ -122,6 +125,19 @@ func SampleDiscRej(r float64) (x, y float64) {
 	for {
 		x = 2*rand.Float64() - 1.0
 		y = 2*rand.Float64() - 1.0
+		if x*x+y*y <= 1 {
+			break
+		}
+	}
+	return r * x, r * y
+}
+
+// SampleDiscRejRng returns a random point (x,y) within a disc of radius r
+// using the provided random source.
+func SampleDiscRejRng(rng *rand.Rand, r float64) (x, y float64) {
+	for {
+		x = 2*rng.Float64() - 1.0
+		y = 2*rng.Float64() - 1.0
 		if x*x+y*y <= 1 {
 			break
 		}
@@ -168,6 +184,9 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if t.RayRadius <= 0 {
 		t.RayRadius = 0.5
 	}
+	if t.NumWorkers <= 0 {
+		t.NumWorkers = runtime.GOMAXPROCS(0)
+	}
 	// And zero value (0,0,0) for Camera is the right default.
 
 	aspectRatio := float64(t.width) / float64(t.height)
@@ -179,34 +198,57 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	upperLeftCorner := t.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
 	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
 
-	deltaX := 0.0
-	deltaY := 0.0
 	div := 1.0 / float64(t.NumRaysPerPixel)
-	for y := range t.height {
-		for x := range t.width {
-			// Compute ray for pixel (x, y)
-			// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
-			colorSum := ColorF{0, 0, 0}
-			for range t.NumRaysPerPixel {
-				if t.NumRaysPerPixel > 1 {
-					deltaX, deltaY = SampleDiscRej(t.RayRadius)
-				}
-				pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
-				rayDirection := pixel.Minus(t.Camera)
-				ray := Ray{Origin: t.Camera, Direction: rayDirection}
-				color := scene.RayColor(ray, t.MaxDepth)
-				colorSum = Add(colorSum, color)
-			}
-			avgColor := SMul(colorSum, div)
-			t.imageData.SetRGBA(x, y, avgColor.ToSRGBA())
+
+	// Parallel rendering: divide work into horizontal bands
+	var wg sync.WaitGroup
+	rowsPerWorker := t.height / t.NumWorkers
+	remainder := t.height % t.NumWorkers
+	startY := 0
+	for i := range t.NumWorkers {
+		// Distribute remainder rows to first workers (one extra row each)
+		rowsForThisWorker := rowsPerWorker
+		if i < remainder {
+			rowsForThisWorker++
 		}
+		endY := startY + rowsForThisWorker
+		wg.Add(1)
+		go func(yStart, yEnd int) {
+			defer wg.Done()
+			//nolint:gosec // not crypto use.
+			rng := rand.New(rand.NewPCG(uint64(yStart), uint64(yEnd)))
+			deltaX := 0.0
+			deltaY := 0.0
+			for y := yStart; y < yEnd; y++ {
+				for x := range t.width {
+					// Compute ray for pixel (x, y)
+					// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
+					colorSum := ColorF{0, 0, 0}
+					for range t.NumRaysPerPixel {
+						if t.NumRaysPerPixel > 1 {
+							deltaX, deltaY = SampleDiscRejRng(rng, t.RayRadius)
+						}
+						pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
+						rayDirection := pixel.Minus(t.Camera)
+						ray := Ray{Origin: t.Camera, Direction: rayDirection, rng: rng}
+						color := scene.RayColor(ray, t.MaxDepth)
+						colorSum = Add(colorSum, color)
+					}
+					avgColor := SMul(colorSum, div)
+					t.imageData.SetRGBA(x, y, avgColor.ToSRGBA())
+				}
+			}
+		}(startY, endY)
+		startY = endY
 	}
+	wg.Wait()
 	return t.imageData
 }
 
 type Ray struct {
 	Origin    Vec3
 	Direction Vec3
+	rng       *rand.Rand
 }
 
 func (r *Ray) At(t float64) Vec3 {

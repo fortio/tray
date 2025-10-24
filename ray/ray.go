@@ -21,15 +21,15 @@ type Sphere struct {
 }
 
 func (s *Sphere) Hit(r Ray) float64 {
-	oc := Sub(r.Origin, s.Center)
-	a := Dot(r.Direction, r.Direction)
-	b := 2.0 * Dot(oc, r.Direction)
-	c := Dot(oc, oc) - s.Radius*s.Radius
-	discriminant := b*b - 4*a*c
+	oc := Sub(s.Center, r.Origin)
+	a := LengthSquared(r.Direction)
+	h := Dot(r.Direction, oc)
+	c := LengthSquared(oc) - s.Radius*s.Radius
+	discriminant := h*h - a*c
 	if discriminant < 0 {
 		return -1
 	}
-	return (-b - math.Sqrt(discriminant)) / (2.0 * a)
+	return (h - math.Sqrt(discriminant)) / a
 }
 
 type Scene struct {

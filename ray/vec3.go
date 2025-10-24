@@ -80,7 +80,12 @@ func SDiv[T ~[3]float64](v T, t float64) T {
 
 // Length: returns the length of the vector.
 func Length[T ~[3]float64](v T) float64 {
-	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+	return math.Sqrt(LengthSquared(v))
+}
+
+// LengthSquared: returns the squared length of the vector.
+func LengthSquared[T ~[3]float64](v T) float64 {
+	return v[0]*v[0] + v[1]*v[1] + v[2]*v[2]
 }
 
 // Unit: returns the unit vector in the direction of v

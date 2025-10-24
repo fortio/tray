@@ -35,6 +35,21 @@ type Hittable interface {
 	Hit(r Ray, tMin, tMax float64) (bool, HitRecord)
 }
 
+func (s *Scene) Hit(r Ray, tMin, tMax float64) (bool, HitRecord) {
+	hitAnything := false
+	closestSoFar := tMax
+	var tempRec HitRecord
+
+	for _, object := range s.Objects {
+		if hit, rec := object.Hit(r, tMin, closestSoFar); hit {
+			hitAnything = true
+			closestSoFar = rec.T
+			tempRec = rec
+		}
+	}
+	return hitAnything, tempRec
+}
+
 type Sphere struct {
 	Center Vec3
 	Radius float64
@@ -64,13 +79,12 @@ func (s *Sphere) Hit(r Ray, tMin, tMax float64) (bool, HitRecord) {
 }
 
 type Scene struct {
-	// Fields defining the scene to be rendered.
-	S Sphere
+	Objects []Hittable
 }
 
 func (s *Scene) TraceRay(r Ray) color.RGBA {
-	if hit, hr := s.S.Hit(r, 0.001, math.MaxFloat64); hit {
-		N := Unit(r.At(hr.T).Minus(Vec3{0, 0, -1}))
+	if hit, hr := s.Hit(r, 0.001, math.MaxFloat64); hit {
+		N := hr.Normal
 		return SMul(ColorF{N.X() + 1, N.Y() + 1, N.Z() + 1}, 0.5).ToRGBA()
 	}
 	unit := Unit(r.Direction)
@@ -95,7 +109,10 @@ func New(width, height int) *Tracer {
 func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
 		scene = &Scene{
-			S: Sphere{Center: Vec3{0, 0, -1}, Radius: 0.6},
+			Objects: []Hittable{
+				&Sphere{Center: Vec3{0, 0, -1}, Radius: 0.5},
+				&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100},
+			},
 		}
 	}
 	// Implementation of ray tracing rendering.

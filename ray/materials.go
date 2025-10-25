@@ -54,7 +54,7 @@ func (d Dielectric) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
 	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
 	cannotRefract := (refractionRatio*sinTheta > 1.0)
 	var direction Vec3
-	if cannotRefract || Reflectance(cosTheta, refractionRatio) > rIn.rng.Float64() {
+	if cannotRefract || Reflectance(cosTheta, refractionRatio) > rIn.Float64() {
 		direction = Reflect(unitDirection, rec.Normal)
 	} else {
 		direction = Refract(unitDirection, rec.Normal, refractionRatio)

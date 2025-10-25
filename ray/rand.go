@@ -16,6 +16,10 @@ func NewRandomSource() Rand {
 	return Rand{rng: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))}
 }
 
+func (r Rand) Float64() float64 {
+	return r.rng.Float64()
+}
+
 // Random generates a random vector with each component in [0,1).
 func Random[T ~[3]float64](r Rand) T {
 	return T{r.rng.Float64(), r.rng.Float64(), r.rng.Float64()}

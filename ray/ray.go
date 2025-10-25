@@ -19,6 +19,7 @@ type Tracer struct {
 	NumRaysPerPixel int
 	RayRadius       float64
 	NumWorkers      int // Number of parallel workers; defaults to GOMAXPROCS if <= 0
+	ProgressFunc    func(delta int)
 	width, height   int
 	imageData       *image.RGBA
 }
@@ -240,13 +241,18 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	return t.imageData
 }
 
-func (t *Tracer) RenderLines(yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene) {
+func (t *Tracer) RenderLines(
+	yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene,
+) {
 	//nolint:gosec // not crypto use.
 	rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
 	pix := t.imageData.Pix
 	for y := yStart; y < yEnd; y++ {
+		if t.ProgressFunc != nil {
+			t.ProgressFunc(t.width)
+		}
 		for x := range t.width {
 			// Compute ray for pixel (x, y)
 			// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).

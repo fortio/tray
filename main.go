@@ -11,6 +11,7 @@ import (
 
 	"fortio.org/cli"
 	"fortio.org/log"
+	"fortio.org/progressbar"
 	"fortio.org/terminal/ansipixels"
 	"fortio.org/tray/ray"
 	"golang.org/x/image/draw"
@@ -66,7 +67,6 @@ func Main() int {
 	showSplash := !*fExit
 	fname := *fSave
 	ap.OnResize = func() error {
-		ap.StartSyncMode()
 		ap.ClearScreen()
 		// render at supersampled resolution
 		imgWidth, imgHeight := int(math.Round(supersample*float64(ap.W))), int(math.Round(supersample*float64(ap.H*2)))
@@ -74,7 +74,17 @@ func Main() int {
 		rt.MaxDepth = *fMaxDepth
 		rt.NumRaysPerPixel = *fRays
 		rt.NumWorkers = *fWorkers
+		// Setup progress bar
+		pb := progressbar.NewBar()
+		pb.Prefix = "Rendering "
+		pb.ScreenWriter = ap.Logger
+		total := imgWidth * imgHeight
+		p := progressbar.NewAutoProgress(pb, int64(total))
+		rt.ProgressFunc = func(n int) {
+			p.Update(n)
+		}
 		img := rt.Render(nil) // default scene
+		pb.End()
 		if fname != "" && showSplash {
 			// only save once, not after keypresses
 			err := SaveImage(img, fname)

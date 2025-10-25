@@ -232,7 +232,7 @@ func XYZ(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
-// ToSRGBA converts a linear ColorF to SRGB color.RGBA, clamping values to [0,1].
+// ToSRGBA converts a linear ColorF to sRGB color.RGBA, clamping values to [0,1].
 func (c ColorF) ToSRGBA() color.RGBA {
 	return color.RGBA{
 		R: tcolor.LinearToSrgb(c[0]),

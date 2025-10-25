@@ -173,7 +173,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		center := Lambertian{Albedo: ColorF{0.1, 0.2, 0.5}}
 		//		left := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
 		left := Dielectric{1.5}
-		bubble := Dielectric{1 / 1.5}
+		bubble := Dielectric{1.0 / 1.5}
 		right := Metal{Albedo: ColorF{0.8, 0.3, 0.2}, Fuzz: 0.5}
 		scene = &Scene{
 			// Default scene with two spheres.
@@ -340,8 +340,9 @@ func (d Dielectric) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
 	unitDirection := Unit(rIn.Direction)
 	cosTheta := math.Min(Dot(Neg(unitDirection), rec.Normal), 1.0)
 	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
+	cannotRefract := (refractionRatio*sinTheta > 1.0)
 	var direction Vec3
-	if refractionRatio*sinTheta > 1.0 || Reflectance(cosTheta, refractionRatio) > rIn.rng.Float64() {
+	if cannotRefract || Reflectance(cosTheta, refractionRatio) > rIn.rng.Float64() {
 		direction = Reflect(unitDirection, rec.Normal)
 	} else {
 		direction = Refract(unitDirection, rec.Normal, refractionRatio)

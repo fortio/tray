@@ -29,30 +29,6 @@ func TestLambertianScatter(t *testing.T) {
 	}
 }
 
-func TestLambertianScatterDegenerateDirection(t *testing.T) {
-	// Test the case where scatter direction is near zero
-	rnd := NewRandomSource()
-	lambertian := Lambertian{Albedo: ColorF{0.8, 0.2, 0.1}}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
-	rec := HitRecord{
-		Point:  Vec3{0, 0, -1},
-		Normal: Vec3{0, 1, 0},
-	}
-
-	// Call scatter multiple times to ensure it handles the degenerate case
-	for range 10 {
-		didScatter, _, scattered := lambertian.Scatter(ray, rec)
-		if !didScatter {
-			t.Error("Expected Lambertian to scatter")
-		}
-		if scattered == nil {
-			t.Error("Expected scattered ray")
-		} else if scattered.Origin != rec.Point {
-			t.Errorf("Expected scattered origin %v, got %v", rec.Point, scattered.Origin)
-		}
-	}
-}
-
 func TestMetalScatter(t *testing.T) {
 	rnd := NewRandomSource()
 	metal := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}

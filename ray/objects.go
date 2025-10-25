@@ -107,7 +107,7 @@ func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
 
 func DefaultBackground() *AmbientLight {
 	white := ColorF{1.0, 1.0, 1.0}
-	blue := ColorF{0.5, 0.7, 1.0}
+	blue := ColorF{0.4, 0.65, 1.0}
 	return &AmbientLight{ColorA: white, ColorB: blue}
 }
 

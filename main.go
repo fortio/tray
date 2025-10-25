@@ -15,6 +15,7 @@ import (
 	"fortio.org/terminal/ansipixels"
 	"fortio.org/tray/ray"
 	"golang.org/x/image/draw"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -33,13 +34,27 @@ func SaveImage(img image.Image, fname string) error {
 	return nil
 }
 
-func Main() int {
+// NonRawTerminalSize: gets the terminal size from any of the 3 standard file descriptors (stdout, stderr, stdin).
+// TODO: move to ansipixels package as it's quite generally useful.
+func NonRawTerminalSize() (width, height int, err error) {
+	for _, attempt := range []*os.File{os.Stdout, os.Stderr, os.Stdin} {
+		width, height, err = term.GetSize(int(attempt.Fd()))
+		if err == nil {
+			return width, height, nil
+		}
+	}
+	log.Warnf("Unable to get terminal size from any of stdout, stderr, stdin: %v", err)
+	return 80, 24, err
+}
+
+func Main() int { //nolint:funlen // yes but fairly linear.
 	fSample := flag.Float64("s", 4, "Image supersampling factor")
 	fRays := flag.Int("r", 64, "Number of rays per pixel")
 	fMaxDepth := flag.Int("d", 12, "Maximum ray bounce depth")
 	fWorkers := flag.Int("w", 0, "Number of parallel workers (0 = GOMAXPROCS)")
 	fCPUProfile := flag.String("profile-cpu", "", "Write CPU profile to file")
-	fExit := flag.Bool("exit", false, "Exit immediately after rendering the image once (for timing purposes)")
+	fExit := flag.Bool("exit", false,
+		"Not interactive (no raw), and exit immediately after rendering the image once (for timing purposes)")
 	fSave := flag.String("save", "", "Save the rendered image to the specified PNG file")
 	cli.Main()
 	if *fCPUProfile != "" {
@@ -57,14 +72,28 @@ func Main() int {
 	if supersample <= 0 {
 		supersample = 1
 	}
-	ap := ansipixels.NewAnsiPixels(60)
-	if err := ap.Open(); err != nil {
-		return 1 // error already logged
+	var ap *ansipixels.AnsiPixels
+	exitAfterRender := *fExit
+	normalRawMode := !exitAfterRender
+	if normalRawMode && !term.IsTerminal(int(os.Stdout.Fd())) {
+		log.Warnf("Stdout is not a terminal, switching to non-raw mode")
+		normalRawMode = false
+		exitAfterRender = true
 	}
-	defer ap.Restore()
-	ap.SyncBackgroundColor()
+	if normalRawMode {
+		ap = ansipixels.NewAnsiPixels(60)
+		if err := ap.Open(); err != nil {
+			return 1 // error already logged
+		}
+		defer ap.Restore()
+		ap.SyncBackgroundColor()
+	} else {
+		ap = ansipixels.NewAnsiPixels(0) // 0 fps == for blocking non raw mode
+		ap.W, ap.H, _ = NonRawTerminalSize()
+		defer fmt.Println()
+	}
 	var resized *image.RGBA
-	showSplash := !*fExit
+	showSplash := normalRawMode
 	fname := *fSave
 	ap.OnResize = func() error {
 		ap.ClearScreen()
@@ -113,7 +142,7 @@ func Main() int {
 		return nil
 	}
 	_ = ap.OnResize() // initial draw.
-	if *fExit {
+	if exitAfterRender {
 		return 0
 	}
 	ap.AutoSync = false

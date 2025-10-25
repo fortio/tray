@@ -170,14 +170,17 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
 		ground := Lambbertian{Albedo: ColorF{0.8, 0.8, 0.0}}
 		center := Lambbertian{Albedo: ColorF{0.1, 0.2, 0.5}}
-		left := Metal{Albedo: ColorF{0.8, 0.8, 0.8}}
-		right := Metal{Albedo: ColorF{0.8, 0.3, 0.2}}
+		//		left := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
+		left := Dielectric{1.5}
+		bubble := Dielectric{1 / 1.5}
+		right := Metal{Albedo: ColorF{0.8, 0.3, 0.2}, Fuzz: 0.5}
 		scene = &Scene{
 			// Default scene with two spheres.
 			Objects: []Hittable{
 				&Sphere{Center: Vec3{0, 0, -1.2}, Radius: 0.5, Mat: center},
 				&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100, Mat: ground},
 				&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.5, Mat: left},
+				&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.4, Mat: bubble},
 				&Sphere{Center: Vec3{1.0, 0, -1}, Radius: 0.5, Mat: right},
 			},
 		}
@@ -202,6 +205,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		t.NumWorkers = runtime.GOMAXPROCS(0)
 	}
 	// And zero value (0,0,0) for Camera is the right default.
+	t.Camera = Vec3{0, 0, .8}
 
 	aspectRatio := float64(t.width) / float64(t.height)
 	viewportWidth := aspectRatio * t.ViewportHeight
@@ -303,15 +307,16 @@ type Metal struct {
 
 func (m Metal) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
 	reflected := Reflect(Unit(rIn.Direction), rec.Normal)
-	fuzzVec := SMul(RandomUnitVectorRng[Vec3](rIn.rng), m.Fuzz)
-	scattered := Ray{Origin: rec.Point, Direction: Add(reflected, fuzzVec), rng: rIn.rng}
+	if m.Fuzz > 0.0 {
+		reflected = Add(reflected, SMul(RandomUnitVectorRng[Vec3](rIn.rng), m.Fuzz))
+	}
+	scattered := Ray{Origin: rec.Point, Direction: reflected, rng: rIn.rng}
 	if Dot(scattered.Direction, rec.Normal) > 0 {
 		return true, m.Albedo, scattered
 	}
 	return false, ColorF{}, Ray{}
 }
 
-/*
 type Dielectric struct {
 	RefIdx float64
 }
@@ -340,7 +345,6 @@ func (d Dielectric) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
 func Reflectance(cosine, refIdx float64) float64 {
 	// Use Schlick's approximation for reflectance.
 	r0 := (1 - refIdx) / (1 + refIdx)
-	r0 = r0 * r0
+	r0 *= r0
 	return r0 + (1-r0)*math.Pow((1-cosine), 5)
 }
-*/

@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"image"
+	"image/png"
 	"math"
 	"os"
 	"runtime/pprof"
@@ -25,6 +27,7 @@ func Main() int {
 	fWorkers := flag.Int("w", 0, "Number of parallel workers (0 = GOMAXPROCS)")
 	fCPUProfile := flag.String("profile-cpu", "", "Write CPU profile to file")
 	fExit := flag.Bool("exit", false, "Exit immediately after rendering the image once (for timing purposes)")
+	fSave := flag.String("save", "", "Save the rendered image to the specified PNG file")
 	cli.Main()
 	if *fCPUProfile != "" {
 		f, err := os.Create(*fCPUProfile)
@@ -49,6 +52,7 @@ func Main() int {
 	ap.SyncBackgroundColor()
 	var resized *image.RGBA
 	showSplash := !*fExit
+	fname := *fSave
 	ap.OnResize = func() error {
 		ap.StartSyncMode()
 		ap.ClearScreen()
@@ -59,6 +63,20 @@ func Main() int {
 		rt.NumRaysPerPixel = *fRays
 		rt.NumWorkers = *fWorkers
 		img := rt.Render(nil) // default scene
+		if fname != "" && showSplash {
+			// only save once, not after keypresses
+			pngFile, err := os.Create(fname)
+			if err != nil {
+				return fmt.Errorf("could not create PNG file %q: %w", fname, err)
+			}
+			if err := png.Encode(pngFile, img); err != nil {
+				return fmt.Errorf("could not encode PNG to file %q: %w", fname, err)
+			}
+			if err := pngFile.Close(); err != nil {
+				return fmt.Errorf("could not close PNG file %q: %w", fname, err)
+			}
+			log.Infof("Saved rendered image to %q", fname)
+		}
 		// Downscale image:
 		resized = img
 		if supersample != 1 {

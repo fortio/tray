@@ -10,6 +10,12 @@ Ray tracing in the terminal. Extending ansipixels.
 
 Inspired by the [Ray Tracing In One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) book.
 
+
+Current demo scene
+
+![Example](example.png)
+
+
 ## Install
 You can get the binary from [releases](https://github.com/fortio/tray/releases)
 

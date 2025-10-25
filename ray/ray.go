@@ -169,12 +169,12 @@ func SampleDiscAngle(r float64) (x, y float64) {
 // Render performs the ray tracing and returns the resulting image data.
 func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
-		ground := Lambertian{Albedo: ColorF{0.8, 0.8, 0.0}}
+		ground := Lambertian{Albedo: ColorF{0.7, 0.8, 0.1}}
 		center := Lambertian{Albedo: ColorF{0.1, 0.2, 0.5}}
 		//		left := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
 		left := Dielectric{1.5}
 		bubble := Dielectric{1.0 / 1.5}
-		right := Metal{Albedo: ColorF{0.8, 0.3, 0.2}, Fuzz: 0.5}
+		right := Metal{Albedo: ColorF{1, .8, .8}, Fuzz: 0.05}
 		scene = &Scene{
 			// Default scene with two spheres.
 			Objects: []Hittable{
@@ -186,14 +186,14 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 			},
 		}
 		// For now/for this scene:
-		t.Camera = Vec3{0, 0, .8}
+		t.Camera = Vec3{0, .1, 5}
 	}
 	// Default camera / viewport setup
 	if t.FocalLength <= 0 {
-		t.FocalLength = 1.0
+		t.FocalLength = 5
 	}
 	if t.ViewportHeight <= 0 {
-		t.ViewportHeight = 2.0
+		t.ViewportHeight = 1.5
 	}
 	if t.MaxDepth <= 0 {
 		t.MaxDepth = 10

@@ -19,20 +19,25 @@ type Camera struct {
 	pixelYVector Vec3
 }
 
-func DefaultCamera() *Camera {
-	return &Camera{
-		Position:       Vec3{0, 0, 0},
-		LookAt:         Vec3{0, 0, -1},
-		Up:             Vec3{0, 1, 0},
-		FocalLength:    1.0,
-		ViewportHeight: 2,
-		Aperture:       0, // pinhole camera (no blur)
-	}
-}
-
 // Initialize computes the viewport parameters for the given image dimensions.
-// Must be called before rendering.
+// Sets default values for any zero-valued fields. Must be called before rendering.
 func (c *Camera) Initialize(width, height int) {
+	// Set defaults for zero-valued fields
+	if c.FocalLength == 0 {
+		c.FocalLength = 1.0
+	}
+	if c.ViewportHeight == 0 {
+		c.ViewportHeight = 2.0
+	}
+	if c.Up == (Vec3{}) {
+		c.Up = Vec3{0, 1, 0}
+	}
+	if c.LookAt == (Vec3{}) {
+		c.LookAt = Vec3{0, 0, -1}
+	}
+	// Position default is (0,0,0) which is already the zero value
+	// Aperture default is 0 (pinhole) which is already the zero value
+
 	aspectRatio := float64(width) / float64(height)
 	viewportWidth := aspectRatio * c.ViewportHeight
 	horizontal := XYZ(viewportWidth, 0, 0)

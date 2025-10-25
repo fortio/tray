@@ -134,7 +134,6 @@ func TestRender_DefaultParameters(t *testing.T) {
 
 func TestRender_CustomParameters(t *testing.T) {
 	tracer := New(5, 5)
-	tracer.Camera = &Camera{}
 	tracer.Position = Vec3{1, 2, 3}
 	tracer.FocalLength = 10
 	tracer.ViewportHeight = 2.0
@@ -146,8 +145,8 @@ func TestRender_CustomParameters(t *testing.T) {
 	_ = tracer.Render(DefaultScene())
 
 	// Verify custom values are preserved
-	if tracer.Camera.Position != (Vec3{1, 2, 3}) {
-		t.Errorf("Camera.Position = %v, want {1, 2, 3}", tracer.Camera.Position)
+	if tracer.Position != (Vec3{1, 2, 3}) {
+		t.Errorf("Position = %v, want {1, 2, 3}", tracer.Position)
 	}
 	if tracer.FocalLength != 10 {
 		t.Errorf("FocalLength = %f, want 10", tracer.FocalLength)
@@ -257,7 +256,6 @@ func TestRender_MultipleRaysPerPixel(t *testing.T) {
 
 func TestRenderLines(t *testing.T) {
 	tracer := New(10, 10)
-	tracer.Camera = &Camera{}
 	tracer.FocalLength = 5
 	tracer.ViewportHeight = 1.5
 	tracer.MaxDepth = 10

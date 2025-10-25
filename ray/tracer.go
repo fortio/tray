@@ -39,6 +39,10 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		// For now/for this scene:
 		t.Camera = Vec3{0, .1, 5}
 	}
+	// Need some/any light to get rays that aren't all black:
+	if scene.Background == nil {
+		scene.Background = DefaultBackground()
+	}
 	// Default camera / viewport setup
 	if t.FocalLength <= 0 {
 		t.FocalLength = 5

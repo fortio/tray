@@ -3,7 +3,6 @@ package ray
 import (
 	"image/color"
 	"math"
-	"math/rand/v2"
 
 	"fortio.org/terminal/ansipixels/tcolor"
 )
@@ -108,11 +107,6 @@ func Neg[T ~[3]float64](v T) T {
 	return T{-v[0], -v[1], -v[2]}
 }
 
-// Random generates a random vector with each component in [0,1).
-func Random[T ~[3]float64]() T {
-	return T{rand.Float64(), rand.Float64(), rand.Float64()} //nolint:gosec // not crypto use.
-}
-
 // NearZero returns true if the vector is close to zero in all dimensions.
 func NearZero[T ~[3]float64](v T) bool {
 	s := 1e-8
@@ -131,85 +125,6 @@ func Refract[T ~[3]float64](uv, n T, etaiOverEtat float64) T {
 	rOutPerp := SMul(Add(uv, SMul(n, cosTheta)), etaiOverEtat)
 	rOutParallel := SMul(n, -math.Sqrt(math.Abs(1.0-LengthSquared(rOutPerp))))
 	return Add(rOutPerp, rOutParallel)
-}
-
-// RandomInRange generates a random vector with each component in the Interval
-// excluding the end.
-//
-//nolint:gosec // not crypto use.
-func RandomInRange[T ~[3]float64](intv Interval) T {
-	minV := intv.Start
-	l := intv.Length()
-	return T{
-		minV + l*rand.Float64(),
-		minV + l*rand.Float64(),
-		minV + l*rand.Float64(),
-	}
-}
-
-// RandomUnitVectorRej generates a random unit vector using rejection sampling.
-// It repeatedly samples random vectors in the cube [-1,1)^3 until one is
-// found inside the unit sphere, then normalizes it to length 1.
-// This is the slowest of the three methods provided here.
-func RandomUnitVectorRej[T ~[3]float64]() T {
-	for {
-		r := RandomInRange[T](Interval{Start: -1, End: 1})
-		lensq := LengthSquared(r)
-		if lensq > 1e-48 && lensq <= 1 {
-			return SDiv(r, math.Sqrt(lensq))
-		}
-	}
-}
-
-// RandomUnitVectorAngle generates a random unit vector using spherical coordinates.
-// This method is faster than rejection sampling but involves trigonometric functions.
-//
-//nolint:gosec // not crypto use.
-func RandomUnitVectorAngle[T ~[3]float64]() T {
-	angle := rand.Float64() * 2 * math.Pi
-	z := rand.Float64()*2 - 1 // in [-1,1)
-	r := math.Sqrt(1 - z*z)
-	x := r * math.Cos(angle)
-	y := r * math.Sin(angle)
-	return T{x, y, z}
-}
-
-// RandomUnitVector generates a random unit vector using normal distribution.
-// It is the fastest of the three methods provided here and produces uniformly
-// distributed points on the unit sphere. Being both correct and most efficient,
-// this is the preferred method for generating random unit vectors and thus gets
-// the default name.
-//
-//nolint:gosec // not crypto use.
-func RandomUnitVector[T ~[3]float64]() T {
-	for {
-		x, y, z := rand.NormFloat64(), rand.NormFloat64(), rand.NormFloat64()
-		r := math.Sqrt(x*x + y*y + z*z)
-		if r > 1e-24 {
-			return T{x / r, y / r, z / r}
-		}
-	}
-}
-
-// RandomUnitVectorRng generates a random unit vector using normal distribution
-// with the provided random source. This version allows per-goroutine rand sources.
-func RandomUnitVectorRng[T ~[3]float64](rng *rand.Rand) T {
-	for {
-		x, y, z := rng.NormFloat64(), rng.NormFloat64(), rng.NormFloat64()
-		r := math.Sqrt(x*x + y*y + z*z)
-		if r > 1e-24 {
-			return T{x / r, y / r, z / r}
-		}
-	}
-}
-
-// RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.
-func RandomOnHemisphere[T ~[3]float64](normal T) T {
-	onUnitSphere := RandomUnitVector[T]()
-	if Dot(onUnitSphere, normal) > 0.0 { // In the same hemisphere as the normal
-		return onUnitSphere
-	}
-	return Neg(onUnitSphere)
 }
 
 // X: returns the X component.
@@ -291,43 +206,3 @@ var (
 	FrontEpsilon = Interval{Start: 1e-6, End: math.Inf(1)}
 	ZeroOne      = Interval{Start: 0, End: 1}
 )
-
-// SampleDiscRej returns a random point (x,y) within a disc of radius r.
-// Rejection sampling method.
-//
-//nolint:gosec // not crypto use.
-func SampleDiscRej(r float64) (x, y float64) {
-	for {
-		x = 2*rand.Float64() - 1.0
-		y = 2*rand.Float64() - 1.0
-		if x*x+y*y <= 1 {
-			break
-		}
-	}
-	return r * x, r * y
-}
-
-// SampleDiscRejRng returns a random point (x,y) within a disc of radius r
-// using the provided random source.
-func SampleDiscRejRng(rng *rand.Rand, r float64) (x, y float64) {
-	for {
-		x = 2*rng.Float64() - 1.0
-		y = 2*rng.Float64() - 1.0
-		if x*x+y*y <= 1 {
-			break
-		}
-	}
-	return r * x, r * y
-}
-
-// SampleDiscAngle returns a random point (x,y) within a disc of radius r.
-// Angle method.
-//
-//nolint:gosec // not crypto use.
-func SampleDiscAngle(r float64) (x, y float64) {
-	theta := 2.0 * math.Pi * rand.Float64()
-	rad := r * math.Sqrt(rand.Float64())
-	x = rad * math.Cos(theta)
-	y = rad * math.Sin(theta)
-	return x, y
-}

@@ -4,7 +4,6 @@ package ray
 
 import (
 	"image"
-	"math/rand/v2"
 	"runtime"
 	"sync"
 )
@@ -97,7 +96,7 @@ func (t *Tracer) RenderLines(
 	yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene,
 ) {
 	//nolint:gosec // not crypto use.
-	rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+	rng := NewRandomSource()
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
 	pix := t.imageData.Pix
@@ -112,11 +111,11 @@ func (t *Tracer) RenderLines(
 			for range t.NumRaysPerPixel {
 				deltaX, deltaY := 0.0, 0.0
 				if multipleRays {
-					deltaX, deltaY = SampleDiscRejRng(rng, t.RayRadius)
+					deltaX, deltaY = rng.SampleDisc(t.RayRadius)
 				}
 				pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
 				rayDirection := pixel.Minus(t.Camera)
-				ray := Ray{Origin: t.Camera, Direction: rayDirection, rng: rng}
+				ray := rng.NewRay(t.Camera, rayDirection)
 				color := scene.RayColor(ray, t.MaxDepth)
 				colorSum = Add(colorSum, color)
 			}
@@ -130,14 +129,4 @@ func (t *Tracer) RenderLines(
 			s[3] = 255
 		}
 	}
-}
-
-type Ray struct {
-	Origin    Vec3
-	Direction Vec3
-	rng       *rand.Rand
-}
-
-func (r *Ray) At(t float64) Vec3 {
-	return Add(r.Origin, SMul(r.Direction, t))
 }

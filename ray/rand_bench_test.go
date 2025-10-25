@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+var globalSink float64
+
 // BenchmarkSharedRand benchmarks using a single shared rand.Rand source
 // across multiple goroutines (with mutex protection).
 func BenchmarkSharedRand(b *testing.B) {
@@ -21,7 +23,7 @@ func BenchmarkSharedRand(b *testing.B) {
 			sum += v
 		}
 		// Prevent optimization
-		_ = sum
+		globalSink = sum
 	})
 }
 
@@ -35,7 +37,7 @@ func BenchmarkPerGoRoutineRand(b *testing.B) {
 			sum += v
 		}
 		// Prevent optimization
-		_ = sum
+		globalSink = sum
 	})
 }
 
@@ -49,7 +51,7 @@ func BenchmarkGlobalRand(b *testing.B) {
 			sum += v
 		}
 		// Prevent optimization
-		_ = sum
+		globalSink = sum
 	})
 }
 
@@ -64,9 +66,11 @@ func BenchmarkPerGoRoutineChaCha8(b *testing.B) {
 			sum += v
 		}
 		// Prevent optimization
-		_ = sum
+		globalSink = sum
 	})
 }
+
+var globalSinkUint64 uint64
 
 // BenchmarkPCGUint64 benchmarks raw PCG Uint64 generation.
 func BenchmarkPCGUint64(b *testing.B) {
@@ -76,7 +80,7 @@ func BenchmarkPCGUint64(b *testing.B) {
 		for pb.Next() {
 			sum += src.Uint64()
 		}
-		_ = sum
+		globalSinkUint64 = sum
 	})
 }
 
@@ -88,6 +92,6 @@ func BenchmarkChaCha8Uint64(b *testing.B) {
 		for pb.Next() {
 			sum += src.Uint64()
 		}
-		_ = sum
+		globalSinkUint64 = sum
 	})
 }

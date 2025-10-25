@@ -3,20 +3,20 @@ package ray
 import "math"
 
 type Material interface {
-	Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray)
+	Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray)
 }
 
 type Lambertian struct {
 	Albedo ColorF
 }
 
-func (l Lambertian) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
-	scatterDirection := Add(rec.Normal, RandomUnitVectorRng[Vec3](rIn.rng))
+func (l Lambertian) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
+	scatterDirection := Add(rec.Normal, RandomUnitVector[Vec3](rIn.Rand))
 	// Catch degenerate scatter direction
 	if NearZero(scatterDirection) {
 		scatterDirection = rec.Normal
 	}
-	scattered := Ray{Origin: rec.Point, Direction: scatterDirection, rng: rIn.rng}
+	scattered := rIn.NewRay(rec.Point, scatterDirection)
 	return true, l.Albedo, scattered
 }
 
@@ -25,23 +25,23 @@ type Metal struct {
 	Fuzz   float64
 }
 
-func (m Metal) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
+func (m Metal) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
 	reflected := Reflect(Unit(rIn.Direction), rec.Normal)
 	if m.Fuzz > 0.0 {
-		reflected = Add(reflected, SMul(RandomUnitVectorRng[Vec3](rIn.rng), m.Fuzz))
+		reflected = Add(reflected, SMul(RandomUnitVector[Vec3](rIn.Rand), m.Fuzz))
 	}
-	scattered := Ray{Origin: rec.Point, Direction: reflected, rng: rIn.rng}
+	scattered := rIn.NewRay(rec.Point, reflected)
 	if Dot(scattered.Direction, rec.Normal) > 0 {
 		return true, m.Albedo, scattered
 	}
-	return false, ColorF{}, Ray{}
+	return false, ColorF{}, nil
 }
 
 type Dielectric struct {
 	RefIdx float64
 }
 
-func (d Dielectric) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
+func (d Dielectric) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
 	attenuation := ColorF{1.0, 1.0, 1.0}
 	var refractionRatio float64
 	if rec.FrontFace {
@@ -59,7 +59,7 @@ func (d Dielectric) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
 	} else {
 		direction = Refract(unitDirection, rec.Normal, refractionRatio)
 	}
-	scattered := Ray{Origin: rec.Point, Direction: direction, rng: rIn.rng}
+	scattered := rIn.NewRay(rec.Point, direction)
 	return true, attenuation, scattered
 }
 

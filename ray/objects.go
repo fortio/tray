@@ -10,7 +10,7 @@ type HitRecord struct {
 	Mat       Material
 }
 
-func (hr *HitRecord) SetFaceNormal(r Ray, outwardNormal Vec3) {
+func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
 	hr.FrontFace = Dot(r.Direction, outwardNormal) < 0
 	if hr.FrontFace {
 		hr.Normal = outwardNormal
@@ -20,14 +20,14 @@ func (hr *HitRecord) SetFaceNormal(r Ray, outwardNormal Vec3) {
 }
 
 type Hittable interface {
-	Hit(r Ray, interval Interval) (bool, HitRecord)
+	Hit(r *Ray, interval Interval) (bool, HitRecord)
 }
 
 type Scene struct {
 	Objects []Hittable
 }
 
-func (s *Scene) Hit(r Ray, interval Interval) (bool, HitRecord) {
+func (s *Scene) Hit(r *Ray, interval Interval) (bool, HitRecord) {
 	hitAnything := false
 	closestSoFar := interval.End
 	var tempRec HitRecord
@@ -43,12 +43,12 @@ func (s *Scene) Hit(r Ray, interval Interval) (bool, HitRecord) {
 }
 
 // RayColor is the main function for computing the color of a ray (thus a pixel).
-func (s *Scene) RayColor(r Ray, depth int) ColorF {
+func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 	if depth <= 0 {
 		return ColorF{0, 0, 0}
 	}
 	if hit, hr := s.Hit(r, FrontEpsilon); hit {
-		var scattered Ray
+		var scattered *Ray
 		var attenuation ColorF
 		if didScatter, att, scat := hr.Mat.Scatter(r, hr); didScatter {
 			attenuation = att
@@ -71,7 +71,7 @@ type Sphere struct {
 	Mat    Material
 }
 
-func (s *Sphere) Hit(r Ray, i Interval) (bool, HitRecord) {
+func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
 	oc := Sub(s.Center, r.Origin)
 	a := LengthSquared(r.Direction)
 	h := Dot(r.Direction, oc)

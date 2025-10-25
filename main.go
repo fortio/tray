@@ -5,6 +5,7 @@ import (
 	"image"
 	"math"
 	"os"
+	"runtime/pprof"
 
 	"fortio.org/cli"
 	"fortio.org/log"
@@ -21,8 +22,21 @@ func Main() int {
 	fSample := flag.Float64("s", 2, "Image supersampling factor")
 	fRays := flag.Int("r", 32, "Number of rays per pixel")
 	fMaxDepth := flag.Int("d", 8, "Maximum ray bounce depth")
+	fWorkers := flag.Int("w", 0, "Number of parallel workers (0 = GOMAXPROCS)")
+	fCPUProfile := flag.String("profile-cpu", "", "Write CPU profile to file")
 	fExit := flag.Bool("exit", false, "Exit immediately after rendering the image once (for timing purposes)")
 	cli.Main()
+	if *fCPUProfile != "" {
+		f, err := os.Create(*fCPUProfile)
+		if err != nil {
+			return log.FErrf("Could not create CPU profile: %v", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			return log.FErrf("Could not start CPU profile: %v", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
 	supersample := *fSample
 	if supersample <= 0 {
 		supersample = 1
@@ -43,6 +57,7 @@ func Main() int {
 		rt := ray.New(imgWidth, imgHeight)
 		rt.MaxDepth = *fMaxDepth
 		rt.NumRaysPerPixel = *fRays
+		rt.NumWorkers = *fWorkers
 		img := rt.Render(nil) // default scene
 		// Downscale image:
 		resized = img

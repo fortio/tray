@@ -20,6 +20,18 @@ func main() {
 	os.Exit(Main())
 }
 
+func SaveImage(img image.Image, fname string) error {
+	pngFile, err := os.Create(fname)
+	if err != nil {
+		return fmt.Errorf("could not create PNG file %q: %w", fname, err)
+	}
+	defer pngFile.Close()
+	if err := png.Encode(pngFile, img); err != nil {
+		return fmt.Errorf("could not encode PNG to file %q: %w", fname, err)
+	}
+	return nil
+}
+
 func Main() int {
 	fSample := flag.Float64("s", 2, "Image supersampling factor")
 	fRays := flag.Int("r", 32, "Number of rays per pixel")
@@ -65,15 +77,9 @@ func Main() int {
 		img := rt.Render(nil) // default scene
 		if fname != "" && showSplash {
 			// only save once, not after keypresses
-			pngFile, err := os.Create(fname)
+			err := SaveImage(img, fname)
 			if err != nil {
-				return fmt.Errorf("could not create PNG file %q: %w", fname, err)
-			}
-			if err := png.Encode(pngFile, img); err != nil {
-				return fmt.Errorf("could not encode PNG to file %q: %w", fname, err)
-			}
-			if err := pngFile.Close(); err != nil {
-				return fmt.Errorf("could not close PNG file %q: %w", fname, err)
+				return fmt.Errorf("could not save image to %q: %w", fname, err)
 			}
 			log.Infof("Saved rendered image to %q", fname)
 		}

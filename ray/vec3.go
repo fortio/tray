@@ -115,7 +115,6 @@ func Random[T ~[3]float64]() T {
 
 // NearZero returns true if the vector is close to zero in all dimensions.
 func NearZero[T ~[3]float64](v T) bool {
-	// Return true if the vector is close to zero in all dimensions.
 	s := 1e-8
 	return (math.Abs(v[0]) < s) && (math.Abs(v[1]) < s) && (math.Abs(v[2]) < s)
 }

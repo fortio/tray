@@ -168,8 +168,8 @@ func SampleDiscAngle(r float64) (x, y float64) {
 // Render performs the ray tracing and returns the resulting image data.
 func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
-		ground := Lambbertian{Albedo: ColorF{0.8, 0.8, 0.0}}
-		center := Lambbertian{Albedo: ColorF{0.1, 0.2, 0.5}}
+		ground := Lambertian{Albedo: ColorF{0.8, 0.8, 0.0}}
+		center := Lambertian{Albedo: ColorF{0.1, 0.2, 0.5}}
 		//		left := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
 		left := Dielectric{1.5}
 		bubble := Dielectric{1 / 1.5}
@@ -184,6 +184,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 				&Sphere{Center: Vec3{1.0, 0, -1}, Radius: 0.5, Mat: right},
 			},
 		}
+		// For now/for this scene:
+		t.Camera = Vec3{0, 0, .8}
 	}
 	// Default camera / viewport setup
 	if t.FocalLength <= 0 {
@@ -204,8 +206,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if t.NumWorkers <= 0 {
 		t.NumWorkers = runtime.GOMAXPROCS(0)
 	}
-	// And zero value (0,0,0) for Camera is the right default.
-	t.Camera = Vec3{0, 0, .8}
+	// And zero value (0,0,0) for Camera is the right default
+	// (when not hardcoded in nil scene case above).
 
 	aspectRatio := float64(t.width) / float64(t.height)
 	viewportWidth := aspectRatio * t.ViewportHeight
@@ -286,11 +288,11 @@ type Material interface {
 	Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray)
 }
 
-type Lambbertian struct {
+type Lambertian struct {
 	Albedo ColorF
 }
 
-func (l Lambbertian) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
+func (l Lambertian) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
 	scatterDirection := Add(rec.Normal, RandomUnitVectorRng[Vec3](rIn.rng))
 	// Catch degenerate scatter direction
 	if NearZero(scatterDirection) {

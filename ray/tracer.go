@@ -62,14 +62,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	// And zero value (0,0,0) for Camera is the right default
 	// (when not hardcoded in nil scene case above).
 
-	aspectRatio := float64(t.width) / float64(t.height)
-	viewportWidth := aspectRatio * t.ViewportHeight
-	horizontal := XYZ(viewportWidth, 0, 0)
-	vertical := XYZ(0, -t.ViewportHeight, 0) // y axis is inverted in image vs our world.
-	pixelXVector := SDiv(horizontal, float64(t.width))
-	pixelYVector := SDiv(vertical, float64(t.height))
-	upperLeftCorner := t.Camera.Position.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
-	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
+	// Initialize camera viewport parameters
+	t.Camera.Initialize(t.width, t.height)
 
 	// Parallel rendering: divide work into horizontal bands
 	var wg sync.WaitGroup
@@ -84,7 +78,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		}
 		wg.Add(1)
 		go (func(yStart, yEnd int) {
-			t.RenderLines(yStart, yEnd, pixel00, pixelXVector, pixelYVector, scene)
+			t.RenderLines(yStart, yEnd, scene)
 			wg.Done()
 		})(startY, endY)
 		startY = endY
@@ -93,9 +87,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	return t.imageData
 }
 
-func (t *Tracer) RenderLines(
-	yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene,
-) {
+func (t *Tracer) RenderLines(yStart, yEnd int, scene *Scene) {
 	rng := NewRandomSource()
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
@@ -113,7 +105,7 @@ func (t *Tracer) RenderLines(
 				if multipleRays {
 					deltaX, deltaY = rng.SampleDisc(t.RayRadius)
 				}
-				pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
+				pixel := t.Camera.pixel00.Plus(t.Camera.pixelXVector.Times(float64(x)+deltaX), t.Camera.pixelYVector.Times(float64(y)+deltaY))
 				rayDirection := pixel.Minus(t.Camera.Position)
 				ray := rng.NewRay(t.Camera.Position, rayDirection)
 				color := scene.RayColor(ray, t.MaxDepth)

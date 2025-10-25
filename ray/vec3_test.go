@@ -754,6 +754,76 @@ func TestRandomOnHemisphere(t *testing.T) {
 	}
 }
 
+func TestRandFloat64(t *testing.T) {
+	r := NewRandomSource()
+	const samples = 1000
+	for range samples {
+		v := r.Float64()
+		if v < 0 || v >= 1 {
+			t.Errorf("Float64() = %v, want in [0,1)", v)
+		}
+	}
+}
+
+func TestSampleDisc(t *testing.T) {
+	r := NewRandomSource()
+	radius := 2.5
+	const samples = 1000
+
+	for range samples {
+		x, y := r.SampleDisc(radius)
+
+		// Check that point is within disc
+		dist := math.Sqrt(x*x + y*y)
+		if dist > radius {
+			t.Errorf("SampleDisc(%v) = (%v, %v), distance %v exceeds radius",
+				radius, x, y, dist)
+		}
+	}
+}
+
+func TestSampleDiscAngle(t *testing.T) {
+	r := NewRandomSource()
+	radius := 3.0
+	const samples = 1000
+
+	for range samples {
+		x, y := r.SampleDiscAngle(radius)
+
+		// Check that point is within disc
+		dist := math.Sqrt(x*x + y*y)
+		if dist > radius {
+			t.Errorf("SampleDiscAngle(%v) = (%v, %v), distance %v exceeds radius",
+				radius, x, y, dist)
+		}
+	}
+}
+
+func TestSampleDiscMethods(t *testing.T) {
+	// Compare both methods produce valid results
+	r := NewRandomSource()
+	radius := 1.0
+	const samples = 100
+
+	for range samples {
+		x1, y1 := r.SampleDisc(radius)
+		x2, y2 := r.SampleDiscAngle(radius)
+
+		// Both should be within disc
+		dist1 := math.Sqrt(x1*x1 + y1*y1)
+		dist2 := math.Sqrt(x2*x2 + y2*y2)
+
+		if dist1 > radius {
+			t.Errorf("SampleDisc produced point outside disc: (%v, %v), dist=%v",
+				x1, y1, dist1)
+		}
+		if dist2 > radius {
+			t.Errorf("SampleDiscAngle produced point outside disc: (%v, %v), dist=%v",
+				x2, y2, dist2)
+		}
+	}
+}
+
 // Benchmarks for comparing the three methods
 
 func BenchmarkRandomUnitVector(b *testing.B) {

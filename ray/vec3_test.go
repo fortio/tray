@@ -767,3 +767,168 @@ func BenchmarkRandomUnitVectorNorm(b *testing.B) {
 		_ = RandomUnitVector[Vec3]()
 	}
 }
+
+func TestNearZero(t *testing.T) {
+	tests := []struct {
+		name     string
+		v        Vec3
+		expected bool
+	}{
+		{"zero vector", Vec3{0, 0, 0}, true},
+		{"very small vector", Vec3{1e-9, 1e-10, 1e-11}, true},
+		{"small but not near zero", Vec3{1e-7, 0, 0}, false},
+		{"normal vector", Vec3{1, 2, 3}, false},
+		{"one component too large", Vec3{1e-9, 1e-9, 1e-6}, false},
+		{"negative small", Vec3{-1e-10, -1e-11, -1e-12}, true},
+		{"mixed signs near zero", Vec3{1e-10, -1e-11, 1e-12}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := NearZero(tt.v)
+			if result != tt.expected {
+				t.Errorf("NearZero(%v) = %v, want %v", tt.v, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestReflect(t *testing.T) {
+	tests := []struct {
+		name     string
+		v        Vec3
+		n        Vec3
+		expected Vec3
+	}{
+		{
+			name:     "reflect off horizontal surface",
+			v:        Vec3{1, -1, 0},
+			n:        Vec3{0, 1, 0},
+			expected: Vec3{1, 1, 0},
+		},
+		{
+			name:     "reflect off vertical surface",
+			v:        Vec3{1, 1, 0},
+			n:        Vec3{1, 0, 0},
+			expected: Vec3{-1, 1, 0},
+		},
+		{
+			name:     "perpendicular reflection",
+			v:        Vec3{0, -1, 0},
+			n:        Vec3{0, 1, 0},
+			expected: Vec3{0, 1, 0},
+		},
+		{
+			name:     "45 degree angle",
+			v:        Unit(Vec3{1, -1, 0}),
+			n:        Vec3{0, 1, 0},
+			expected: Unit(Vec3{1, 1, 0}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Reflect(tt.v, tt.n)
+			for i := range 3 {
+				if math.Abs(result[i]-tt.expected[i]) > 1e-9 {
+					t.Errorf("Reflect(%v, %v)[%d] = %v, want %v",
+						tt.v, tt.n, i, result[i], tt.expected[i])
+				}
+			}
+		})
+	}
+}
+
+func TestRefract(t *testing.T) {
+	tests := []struct {
+		name           string
+		uv             Vec3
+		n              Vec3
+		etaiOverEtat   float64
+		checkAngle     bool // If true, verify refracted ray bends toward/away from normal
+		angleDecreases bool // For checkAngle: true if angle should decrease (entering denser medium)
+	}{
+		{
+			name:         "perpendicular incidence",
+			uv:           Vec3{0, -1, 0},
+			n:            Vec3{0, 1, 0},
+			etaiOverEtat: 1.5,
+			checkAngle:   false, // No bending for perpendicular
+		},
+		{
+			name:           "entering glass from air",
+			uv:             Unit(Vec3{1, -1, 0}),
+			n:              Vec3{0, 1, 0},
+			etaiOverEtat:   1.0 / 1.5,
+			checkAngle:     true,
+			angleDecreases: true, // Bends toward normal
+		},
+		{
+			name:           "exiting glass to air",
+			uv:             Unit(Vec3{1, -1, 0}),
+			n:              Vec3{0, 1, 0},
+			etaiOverEtat:   1.5 / 1.0,
+			checkAngle:     true,
+			angleDecreases: false, // Bends away from normal
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Refract(tt.uv, tt.n, tt.etaiOverEtat)
+
+			// Basic sanity check: result should not be zero
+			if NearZero(result) {
+				t.Errorf("Refract() produced near-zero vector: %v", result)
+			}
+
+			if tt.checkAngle { //nolint:nestif // test code complexity acceptable
+				// Normalize for angle comparison
+				resultUnit := Unit(result)
+
+				// Check that refraction bends correctly relative to normal
+				incidentAngle := math.Acos(math.Abs(Dot(tt.uv, tt.n)))
+				refractedAngle := math.Acos(math.Abs(Dot(resultUnit, tt.n)))
+
+				if tt.angleDecreases {
+					// Entering denser medium: angle should decrease (bend toward normal)
+					if refractedAngle >= incidentAngle {
+						t.Errorf("Expected refracted angle (%v) < incident angle (%v) when entering denser medium",
+							refractedAngle, incidentAngle)
+					}
+				} else {
+					// Exiting to less dense medium: angle should increase (bend away from normal)
+					if refractedAngle <= incidentAngle {
+						t.Errorf("Expected refracted angle (%v) > incident angle (%v) when exiting to less dense medium",
+							refractedAngle, incidentAngle)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestToRGBALinear(t *testing.T) {
+	tests := []struct {
+		name     string
+		c        ColorF
+		expected color.RGBA
+	}{
+		{"black", ColorF{0, 0, 0}, color.RGBA{R: 0, G: 0, B: 0, A: 255}},
+		{"white", ColorF{1, 1, 1}, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
+		{"red", ColorF{1, 0, 0}, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
+		{"green", ColorF{0, 1, 0}, color.RGBA{R: 0, G: 255, B: 0, A: 255}},
+		{"blue", ColorF{0, 0, 1}, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
+		{"mid gray", ColorF{0.5, 0.5, 0.5}, color.RGBA{R: 128, G: 128, B: 128, A: 255}},
+		{"quarter values", ColorF{0.25, 0.5, 0.75}, color.RGBA{R: 64, G: 128, B: 191, A: 255}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.c.ToRGBALinear()
+			if result != tt.expected {
+				t.Errorf("ToRGBALinear() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}

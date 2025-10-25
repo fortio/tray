@@ -19,6 +19,7 @@ type Tracer struct {
 	NumRaysPerPixel int
 	RayRadius       float64
 	NumWorkers      int // Number of parallel workers; defaults to GOMAXPROCS if <= 0
+	ProgressFunc    func(delta int)
 	width, height   int
 	imageData       *image.RGBA
 }
@@ -28,6 +29,7 @@ type HitRecord struct {
 	Normal    Vec3
 	T         float64
 	FrontFace bool
+	Mat       Material
 }
 
 func (hr *HitRecord) SetFaceNormal(r Ray, outwardNormal Vec3) {
@@ -61,6 +63,7 @@ func (s *Scene) Hit(r Ray, interval Interval) (bool, HitRecord) {
 type Sphere struct {
 	Center Vec3
 	Radius float64
+	Mat    Material
 }
 
 func (s *Sphere) Hit(r Ray, i Interval) (bool, HitRecord) {
@@ -83,6 +86,7 @@ func (s *Sphere) Hit(r Ray, i Interval) (bool, HitRecord) {
 	hr := HitRecord{Point: r.At(root), T: root}
 	outwardNormal := SDiv(Sub(hr.Point, s.Center), s.Radius)
 	hr.SetFaceNormal(r, outwardNormal)
+	hr.Mat = s.Mat
 	return true, hr
 }
 
@@ -95,9 +99,14 @@ func (s *Scene) RayColor(r Ray, depth int) ColorF {
 		return ColorF{0, 0, 0}
 	}
 	if hit, hr := s.Hit(r, FrontEpsilon); hit {
-		direction := Add(hr.Normal, RandomUnitVectorRng[Vec3](r.rng))
-		newRay := Ray{Origin: hr.Point, Direction: direction, rng: r.rng}
-		return SMul(s.RayColor(newRay, depth-1), 0.5)
+		var scattered Ray
+		var attenuation ColorF
+		if didScatter, att, scat := hr.Mat.Scatter(r, hr); didScatter {
+			attenuation = att
+			scattered = scat
+			return Mul(attenuation, s.RayColor(scattered, depth-1))
+		}
+		return ColorF{0, 0, 0}
 	}
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
@@ -160,13 +169,24 @@ func SampleDiscAngle(r float64) (x, y float64) {
 // Render performs the ray tracing and returns the resulting image data.
 func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
+		ground := Lambertian{Albedo: ColorF{0.8, 0.8, 0.0}}
+		center := Lambertian{Albedo: ColorF{0.1, 0.2, 0.5}}
+		//		left := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
+		left := Dielectric{1.5}
+		bubble := Dielectric{1.0 / 1.5}
+		right := Metal{Albedo: ColorF{0.8, 0.3, 0.2}, Fuzz: 0.5}
 		scene = &Scene{
 			// Default scene with two spheres.
 			Objects: []Hittable{
-				&Sphere{Center: Vec3{0, 0, -1}, Radius: 0.5},
-				&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100},
+				&Sphere{Center: Vec3{0, 0, -1.2}, Radius: 0.5, Mat: center},
+				&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100, Mat: ground},
+				&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.5, Mat: left},
+				&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.4, Mat: bubble},
+				&Sphere{Center: Vec3{1.0, 0, -1}, Radius: 0.5, Mat: right},
 			},
 		}
+		// For now/for this scene:
+		t.Camera = Vec3{0, 0, .8}
 	}
 	// Default camera / viewport setup
 	if t.FocalLength <= 0 {
@@ -187,7 +207,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if t.NumWorkers <= 0 {
 		t.NumWorkers = runtime.GOMAXPROCS(0)
 	}
-	// And zero value (0,0,0) for Camera is the right default.
+	// And zero value (0,0,0) for Camera is the right default
+	// (when not hardcoded in nil scene case above).
 
 	aspectRatio := float64(t.width) / float64(t.height)
 	viewportWidth := aspectRatio * t.ViewportHeight
@@ -220,13 +241,18 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	return t.imageData
 }
 
-func (t *Tracer) RenderLines(yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene) {
+func (t *Tracer) RenderLines(
+	yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene,
+) {
 	//nolint:gosec // not crypto use.
 	rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
 	pix := t.imageData.Pix
 	for y := yStart; y < yEnd; y++ {
+		if t.ProgressFunc != nil {
+			t.ProgressFunc(t.width)
+		}
 		for x := range t.width {
 			// Compute ray for pixel (x, y)
 			// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
@@ -262,4 +288,72 @@ type Ray struct {
 
 func (r *Ray) At(t float64) Vec3 {
 	return Add(r.Origin, SMul(r.Direction, t))
+}
+
+type Material interface {
+	Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray)
+}
+
+type Lambertian struct {
+	Albedo ColorF
+}
+
+func (l Lambertian) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
+	scatterDirection := Add(rec.Normal, RandomUnitVectorRng[Vec3](rIn.rng))
+	// Catch degenerate scatter direction
+	if NearZero(scatterDirection) {
+		scatterDirection = rec.Normal
+	}
+	scattered := Ray{Origin: rec.Point, Direction: scatterDirection, rng: rIn.rng}
+	return true, l.Albedo, scattered
+}
+
+type Metal struct {
+	Albedo ColorF
+	Fuzz   float64
+}
+
+func (m Metal) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
+	reflected := Reflect(Unit(rIn.Direction), rec.Normal)
+	if m.Fuzz > 0.0 {
+		reflected = Add(reflected, SMul(RandomUnitVectorRng[Vec3](rIn.rng), m.Fuzz))
+	}
+	scattered := Ray{Origin: rec.Point, Direction: reflected, rng: rIn.rng}
+	if Dot(scattered.Direction, rec.Normal) > 0 {
+		return true, m.Albedo, scattered
+	}
+	return false, ColorF{}, Ray{}
+}
+
+type Dielectric struct {
+	RefIdx float64
+}
+
+func (d Dielectric) Scatter(rIn Ray, rec HitRecord) (bool, ColorF, Ray) {
+	attenuation := ColorF{1.0, 1.0, 1.0}
+	var refractionRatio float64
+	if rec.FrontFace {
+		refractionRatio = 1.0 / d.RefIdx
+	} else {
+		refractionRatio = d.RefIdx
+	}
+	unitDirection := Unit(rIn.Direction)
+	cosTheta := math.Min(Dot(Neg(unitDirection), rec.Normal), 1.0)
+	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
+	cannotRefract := (refractionRatio*sinTheta > 1.0)
+	var direction Vec3
+	if cannotRefract || Reflectance(cosTheta, refractionRatio) > rIn.rng.Float64() {
+		direction = Reflect(unitDirection, rec.Normal)
+	} else {
+		direction = Refract(unitDirection, rec.Normal, refractionRatio)
+	}
+	scattered := Ray{Origin: rec.Point, Direction: direction, rng: rIn.rng}
+	return true, attenuation, scattered
+}
+
+func Reflectance(cosine, refIdx float64) float64 {
+	// Use Schlick's approximation for reflectance.
+	r0 := (1 - refIdx) / (1 + refIdx)
+	r0 *= r0
+	return r0 + (1-r0)*math.Pow((1-cosine), 5)
 }

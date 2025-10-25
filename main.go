@@ -2,13 +2,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"image"
+	"image/png"
 	"math"
 	"os"
 	"runtime/pprof"
 
 	"fortio.org/cli"
 	"fortio.org/log"
+	"fortio.org/progressbar"
 	"fortio.org/terminal/ansipixels"
 	"fortio.org/tray/ray"
 	"golang.org/x/image/draw"
@@ -18,6 +21,18 @@ func main() {
 	os.Exit(Main())
 }
 
+func SaveImage(img image.Image, fname string) error {
+	pngFile, err := os.Create(fname)
+	if err != nil {
+		return fmt.Errorf("could not create PNG file %q: %w", fname, err)
+	}
+	defer pngFile.Close()
+	if err := png.Encode(pngFile, img); err != nil {
+		return fmt.Errorf("could not encode PNG to file %q: %w", fname, err)
+	}
+	return nil
+}
+
 func Main() int {
 	fSample := flag.Float64("s", 2, "Image supersampling factor")
 	fRays := flag.Int("r", 32, "Number of rays per pixel")
@@ -25,6 +40,7 @@ func Main() int {
 	fWorkers := flag.Int("w", 0, "Number of parallel workers (0 = GOMAXPROCS)")
 	fCPUProfile := flag.String("profile-cpu", "", "Write CPU profile to file")
 	fExit := flag.Bool("exit", false, "Exit immediately after rendering the image once (for timing purposes)")
+	fSave := flag.String("save", "", "Save the rendered image to the specified PNG file")
 	cli.Main()
 	if *fCPUProfile != "" {
 		f, err := os.Create(*fCPUProfile)
@@ -49,8 +65,8 @@ func Main() int {
 	ap.SyncBackgroundColor()
 	var resized *image.RGBA
 	showSplash := !*fExit
+	fname := *fSave
 	ap.OnResize = func() error {
-		ap.StartSyncMode()
 		ap.ClearScreen()
 		// render at supersampled resolution
 		imgWidth, imgHeight := int(math.Round(supersample*float64(ap.W))), int(math.Round(supersample*float64(ap.H*2)))
@@ -58,7 +74,25 @@ func Main() int {
 		rt.MaxDepth = *fMaxDepth
 		rt.NumRaysPerPixel = *fRays
 		rt.NumWorkers = *fWorkers
+		// Setup progress bar
+		pb := progressbar.NewBar()
+		pb.Prefix = "Rendering "
+		pb.ScreenWriter = ap.Logger
+		total := imgWidth * imgHeight
+		p := progressbar.NewAutoProgress(pb, int64(total))
+		rt.ProgressFunc = func(n int) {
+			p.Update(n)
+		}
 		img := rt.Render(nil) // default scene
+		pb.End()
+		if fname != "" && showSplash {
+			// only save once, not after keypresses
+			err := SaveImage(img, fname)
+			if err != nil {
+				return fmt.Errorf("could not save image to %q: %w", fname, err)
+			}
+			log.Infof("Saved rendered image to %q", fname)
+		}
 		// Downscale image:
 		resized = img
 		if supersample != 1 {

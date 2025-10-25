@@ -113,6 +113,26 @@ func Random[T ~[3]float64]() T {
 	return T{rand.Float64(), rand.Float64(), rand.Float64()} //nolint:gosec // not crypto use.
 }
 
+// NearZero returns true if the vector is close to zero in all dimensions.
+func NearZero[T ~[3]float64](v T) bool {
+	s := 1e-8
+	return (math.Abs(v[0]) < s) && (math.Abs(v[1]) < s) && (math.Abs(v[2]) < s)
+}
+
+// Reflect returns the reflection of vector v around normal n.
+func Reflect[T ~[3]float64](v, n T) T {
+	return Sub(v, SMul(n, 2*Dot(v, n)))
+}
+
+// Refract computes the refraction of vector uv through normal n
+// with the given ratio of indices of refraction etaiOverEtat.
+func Refract[T ~[3]float64](uv, n T, etaiOverEtat float64) T {
+	cosTheta := math.Min(Dot(Neg(uv), n), 1.0)
+	rOutPerp := SMul(Add(uv, SMul(n, cosTheta)), etaiOverEtat)
+	rOutParallel := SMul(n, -math.Sqrt(math.Abs(1.0-LengthSquared(rOutPerp))))
+	return Add(rOutPerp, rOutParallel)
+}
+
 // RandomInRange generates a random vector with each component in the Interval
 // excluding the end.
 //
@@ -212,12 +232,22 @@ func XYZ(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
-// ToSRGBA from a linear ColorF to SRGB color.RGBA, clamping values to [0,1].
+// ToSRGBA converts a linear ColorF to sRGB color.RGBA, clamping values to [0,1].
 func (c ColorF) ToSRGBA() color.RGBA {
 	return color.RGBA{
 		R: tcolor.LinearToSrgb(c[0]),
 		G: tcolor.LinearToSrgb(c[1]),
 		B: tcolor.LinearToSrgb(c[2]),
+		A: 255,
+	}
+}
+
+// ToRGBALinear converts a linear ColorF to linear color.RGBA, values must be in [0,1].
+func (c ColorF) ToRGBALinear() color.RGBA {
+	return color.RGBA{
+		R: uint8(math.Round(255. * float64(c[0]))),
+		G: uint8(math.Round(255. * float64(c[1]))),
+		B: uint8(math.Round(255. * float64(c[2]))),
 		A: 255,
 	}
 }

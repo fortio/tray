@@ -238,7 +238,7 @@ func TestRayColorDepthLimit(t *testing.T) {
 		Radius: 0.5,
 		Mat:    Lambertian{Albedo: ColorF{1, 1, 1}},
 	}
-	scene := &Scene{Objects: []Hittable{sphere}}
+	scene := &Scene{Objects: []Hittable{sphere}, Background: DefaultBackground()}
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	// With depth 0, should return black

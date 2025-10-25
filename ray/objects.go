@@ -24,7 +24,8 @@ type Hittable interface {
 }
 
 type Scene struct {
-	Objects []Hittable
+	Objects    []Hittable
+	Background *AmbientLight
 }
 
 func (s *Scene) Hit(r *Ray, interval Interval) (bool, HitRecord) {
@@ -57,11 +58,20 @@ func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 		}
 		return ColorF{0, 0, 0}
 	}
+	if s.Background != nil {
+		return s.Background.Hit(r)
+	}
+	return ColorF{0, 0, 0}
+}
+
+type AmbientLight struct {
+	ColorA, ColorB ColorF
+}
+
+func (al AmbientLight) Hit(r *Ray) ColorF {
 	unit := Unit(r.Direction)
 	a := 0.5 * (unit.Y() + 1.0)
-	white := ColorF{1.0, 1.0, 1.0}
-	blue := ColorF{0.4, 0.65, 1.0}
-	blend := Add(SMul(white, 1.0-a), SMul(blue, a))
+	blend := Add(SMul(al.ColorA, 1.0-a), SMul(al.ColorB, a))
 	return blend
 }
 
@@ -95,6 +105,12 @@ func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
 	return true, hr
 }
 
+func DefaultBackground() *AmbientLight {
+	white := ColorF{1.0, 1.0, 1.0}
+	blue := ColorF{0.4, 0.65, 1.0}
+	return &AmbientLight{ColorA: white, ColorB: blue}
+}
+
 func DefaultScene() *Scene {
 	ground := Lambertian{Albedo: ColorF{0.7, 0.8, 0.1}}
 	center := Lambertian{Albedo: ColorF{0.1, 0.2, 0.5}}
@@ -111,5 +127,6 @@ func DefaultScene() *Scene {
 			&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.4, Mat: bubble},
 			&Sphere{Center: Vec3{1.0, 0, -1}, Radius: 0.5, Mat: right},
 		},
+		Background: DefaultBackground(),
 	}
 }

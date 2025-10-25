@@ -12,18 +12,19 @@ type Rand struct {
 }
 
 func NewRandomSource() Rand {
+	//nolint:gosec // not crypto use.
 	return Rand{rng: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))}
 }
 
 // Random generates a random vector with each component in [0,1).
 func Random[T ~[3]float64](r Rand) T {
-	return T{r.rng.Float64(), r.rng.Float64(), r.rng.Float64()} //nolint:gosec // not crypto use.
+	return T{r.rng.Float64(), r.rng.Float64(), r.rng.Float64()}
 }
 
 // RandomInRange generates a random vector with each component in the Interval
 // excluding the end.
 //
-//nolint:gosec // not crypto use.
+
 func RandomInRange[T ~[3]float64](r Rand, intv Interval) T {
 	minV := intv.Start
 	l := intv.Length()
@@ -51,7 +52,7 @@ func RandomUnitVectorRej[T ~[3]float64](r Rand) T {
 // RandomUnitVectorAngle generates a random unit vector using spherical coordinates.
 // This method is faster than rejection sampling but involves trigonometric functions.
 //
-//nolint:gosec // not crypto use.
+
 func RandomUnitVectorAngle[T ~[3]float64](r Rand) T {
 	angle := r.rng.Float64() * 2 * math.Pi
 	z := r.rng.Float64()*2 - 1 // in [-1,1)
@@ -67,7 +68,7 @@ func RandomUnitVectorAngle[T ~[3]float64](r Rand) T {
 // this is the preferred method for generating random unit vectors and thus gets
 // the default name.
 //
-//nolint:gosec // not crypto use.
+
 func RandomUnitVector[T ~[3]float64](r Rand) T {
 	for {
 		x, y, z := r.rng.NormFloat64(), r.rng.NormFloat64(), r.rng.NormFloat64()
@@ -103,7 +104,7 @@ func (r Rand) SampleDisc(radius float64) (x, y float64) {
 // SampleDiscAngle returns a random point (x,y) within a disc of radius r.
 // Angle method.
 //
-//nolint:gosec // not crypto use.
+
 func (r Rand) SampleDiscAngle(radius float64) (x, y float64) {
 	theta := 2.0 * math.Pi * r.rng.Float64()
 	rad := radius * math.Sqrt(r.rng.Float64())

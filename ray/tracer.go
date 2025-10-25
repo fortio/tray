@@ -95,7 +95,6 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 func (t *Tracer) RenderLines(
 	yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene,
 ) {
-	//nolint:gosec // not crypto use.
 	rng := NewRandomSource()
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)

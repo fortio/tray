@@ -81,7 +81,7 @@ func TestMetalScatterWithFuzz(t *testing.T) {
 
 func TestMetalScatterAbsorbedWhenReflectionBelowSurface(t *testing.T) {
 	rnd := NewRandomSource()
-	// High fuzz to potentially get absorbed rays
+	// High fuzz (>1) can cause scatter to be absorbed when fuzzed reflection goes below surface
 	metal := Metal{Albedo: ColorF{0.7, 0.7, 0.7}, Fuzz: 1.5}
 	rayDir := Unit(Vec3{1, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
@@ -90,24 +90,23 @@ func TestMetalScatterAbsorbedWhenReflectionBelowSurface(t *testing.T) {
 		Normal: Vec3{0, 1, 0},
 	}
 
-	// Try multiple times since fuzz is random
-	absorbedCount := 0
-	scatteredCount := 0
-	for range 100 {
+	// With high fuzz, absorption is possible (test that it doesn't panic)
+	// Try a few times to exercise both scatter and absorption paths
+	hasScattered := false
+	hasAbsorbed := false
+	for range 50 {
 		didScatter, _, _ := metal.Scatter(ray, rec)
 		if didScatter {
-			scatteredCount++
+			hasScattered = true
 		} else {
-			absorbedCount++
+			hasAbsorbed = true
+		}
+		if hasScattered && hasAbsorbed {
+			break // Both paths tested
 		}
 	}
-
-	// With high fuzz, some rays should be absorbed
-	if absorbedCount == 0 {
-		t.Log("Expected some absorbed rays with high fuzz (but this is probabilistic)")
-	}
-	if scatteredCount == 0 {
-		t.Error("Expected at least some scattered rays")
+	if !hasScattered {
+		t.Error("Expected at least some rays to scatter with fuzz=1.5")
 	}
 }
 
@@ -164,39 +163,40 @@ func TestDielectricScatterBackFace(t *testing.T) {
 	}
 }
 
-func TestDielectricScatterMultipleTimes(t *testing.T) {
-	// Test multiple scatters to exercise different code paths (reflection vs refraction)
+func TestDielectricScatterVariousAngles(t *testing.T) {
+	// Test different incident angles to exercise both refraction and reflection paths
 	rnd := NewRandomSource()
 	dielectric := Dielectric{RefIdx: 1.5}
 
 	tests := []struct {
 		name      string
 		rayDir    Vec3
-		normal    Vec3
 		frontFace bool
 	}{
-		{"Front face perpendicular", Vec3{0, -1, 0}, Vec3{0, 1, 0}, true},
-		{"Front face angled", Vec3{1, -1, 0}, Vec3{0, 1, 0}, true},
-		{"Back face perpendicular", Vec3{0, 1, 0}, Vec3{0, 1, 0}, false},
-		{"Back face angled", Vec3{1, 1, 0}, Vec3{0, 1, 0}, false},
+		{"Front perpendicular", Vec3{0, -1, 0}, true},
+		{"Front angled", Vec3{1, -1, 0}, true},
+		{"Back perpendicular", Vec3{0, 1, 0}, false},
+		{"Back angled", Vec3{1, 1, 0}, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rayDir := Unit(tt.rayDir)
-			ray := rnd.NewRay(Vec3{0, 0, 0}, rayDir)
+			ray := rnd.NewRay(Vec3{0, 0, 0}, Unit(tt.rayDir))
 			rec := HitRecord{
 				Point:     Vec3{0, 1, 0},
-				Normal:    tt.normal,
+				Normal:    Vec3{0, 1, 0},
 				FrontFace: tt.frontFace,
 			}
 
-			didScatter, _, scattered := dielectric.Scatter(ray, rec)
+			didScatter, attenuation, scattered := dielectric.Scatter(ray, rec)
 			if !didScatter {
-				t.Error("Expected dielectric to scatter")
+				t.Error("Dielectric should always scatter")
 			}
-			if scattered == nil {
-				t.Error("Expected scattered ray")
+			if attenuation != (ColorF{1, 1, 1}) {
+				t.Errorf("Expected white attenuation, got %v", attenuation)
+			}
+			if scattered == nil || scattered.Origin != rec.Point {
+				t.Error("Expected valid scattered ray from hit point")
 			}
 		})
 	}

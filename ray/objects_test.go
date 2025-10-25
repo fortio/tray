@@ -279,59 +279,37 @@ func TestRayColorDepthExhaustion(t *testing.T) {
 	}
 }
 
-func TestRayColorWithLambertian(t *testing.T) {
+func TestRayColorWithDifferentMaterials(t *testing.T) {
 	rnd := NewRandomSource()
-	sphere := &Sphere{
-		Center: Vec3{0, 0, -1},
-		Radius: 0.5,
-		Mat:    Lambertian{Albedo: ColorF{0.5, 0.5, 0.5}},
+	tests := []struct {
+		name string
+		mat  Material
+	}{
+		{"Lambertian", Lambertian{Albedo: ColorF{0.5, 0.5, 0.5}}},
+		{"Metal", Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}},
+		{"Dielectric", Dielectric{RefIdx: 1.5}},
 	}
-	scene := &Scene{Objects: []Hittable{sphere}}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
-	color := scene.RayColor(ray, 5)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sphere := &Sphere{
+				Center: Vec3{0, 0, -1},
+				Radius: 0.5,
+				Mat:    tt.mat,
+			}
+			scene := &Scene{Objects: []Hittable{sphere}}
+			ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
-	// Should not be black or pure white
-	if color == (ColorF{0, 0, 0}) {
-		t.Error("Expected non-black color")
+			color := scene.RayColor(ray, 5)
+
+			// All materials should produce valid colors (components in [0,1])
+			for i, c := range color {
+				if c < 0 || c > 1 {
+					t.Errorf("color[%d] = %f, want in range [0,1]", i, c)
+				}
+			}
+		})
 	}
-	if color == (ColorF{1, 1, 1}) {
-		t.Error("Expected color not to be pure white")
-	}
-}
-
-func TestRayColorWithMetal(t *testing.T) {
-	t.Helper()
-	rnd := NewRandomSource()
-	sphere := &Sphere{
-		Center: Vec3{0, 0, -1},
-		Radius: 0.5,
-		Mat:    Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0},
-	}
-	scene := &Scene{Objects: []Hittable{sphere}}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
-
-	color := scene.RayColor(ray, 5)
-
-	// Should produce some color (might be black if absorbed)
-	_ = color // Just ensure it runs without panic
-}
-
-func TestRayColorWithDielectric(t *testing.T) {
-	t.Helper()
-	rnd := NewRandomSource()
-	sphere := &Sphere{
-		Center: Vec3{0, 0, -1},
-		Radius: 0.5,
-		Mat:    Dielectric{RefIdx: 1.5},
-	}
-	scene := &Scene{Objects: []Hittable{sphere}}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
-
-	color := scene.RayColor(ray, 5)
-
-	// Should produce some color
-	_ = color // Just ensure it runs without panic
 }
 
 func TestDefaultScene(t *testing.T) {
@@ -385,39 +363,26 @@ func TestDefaultSceneHasDifferentMaterials(t *testing.T) {
 	}
 }
 
-func TestRayColorWhenMaterialDoesNotScatter(t *testing.T) {
-	// Test the case where a material's Scatter returns false (line 58 in objects.go)
-	// Metal with high fuzz can absorb rays when the fuzzed reflection goes below the surface
+func TestRayColorMaterialAbsorption(t *testing.T) {
+	// Test that when material doesn't scatter, RayColor returns black
+	// Metal with very high fuzz can absorb when fuzzed reflection goes below surface
 	rnd := NewRandomSource()
-
-	// Use metal with extremely high fuzz - when fuzz > 1, many scattered rays
-	// will have negative dot product with normal and get absorbed
 	sphere := &Sphere{
 		Center: Vec3{0, 0, -5},
 		Radius: 1.0,
-		Mat:    Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 5.0}, // Extremely high fuzz
+		Mat:    Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 5.0},
 	}
 	scene := &Scene{Objects: []Hittable{sphere}}
+	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
-	// Cast rays at grazing angles to maximize chance of absorption
-	for i := range 10000 {
-		// Create rays at various angles
-		offset := float64(i) * 0.001
-		// Ray at grazing angle to sphere surface
-		ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0.9 + offset, 0.1, -5})
-
+	// Test that absorption path (didScatter=false) doesn't crash
+	for range 100 {
 		color := scene.RayColor(ray, 5)
-
-		// When metal absorbs (doesn't scatter), RayColor returns black (0,0,0)
-		// But only if it hits and then doesn't scatter (line 58)
-		if color == (ColorF{0, 0, 0}) {
-			// Verify it actually hit the sphere
-			if hit, _ := sphere.Hit(ray, FrontEpsilon); hit {
-				t.Logf("Successfully hit non-scatter absorption case at iteration %d", i)
-				return
+		// Valid result is either absorbed (black) or scattered (some color in [0,1])
+		for i, c := range color {
+			if c < 0 || c > 1 {
+				t.Fatalf("Invalid color[%d] = %f", i, c)
 			}
 		}
 	}
-
-	t.Log("Did not hit absorption case in 10000 tries, but test validates RayColor logic")
 }

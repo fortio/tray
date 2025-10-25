@@ -1,7 +1,6 @@
 package ray
 
 import (
-	"image/color"
 	"runtime"
 	"sync/atomic"
 	"testing"
@@ -222,34 +221,36 @@ func TestRender_ParallelRendering(t *testing.T) {
 }
 
 func TestRender_MultipleRaysPerPixel(t *testing.T) {
-	tracer1 := New(10, 10)
-	tracer1.NumRaysPerPixel = 1
-	img1 := tracer1.Render(DefaultScene())
-
-	tracer2 := New(10, 10)
-	tracer2.NumRaysPerPixel = 4
-	img2 := tracer2.Render(DefaultScene())
-
-	// Images should be different due to antialiasing
-	different := false
-	for y := range 10 {
-		for x := range 10 {
-			c1 := img1.At(x, y).(color.RGBA)
-			c2 := img2.At(x, y).(color.RGBA)
-			if c1 != c2 {
-				different = true
-				break
-			}
-		}
-		if different {
-			break
-		}
+	// Test that multiple rays per pixel doesn't crash and produces valid output
+	tests := []struct {
+		name    string
+		numRays int
+	}{
+		{"single_ray", 1},
+		{"four_rays", 4},
+		{"ten_rays", 10},
 	}
 
-	// Note: It's possible they could be the same by chance, but very unlikely
-	// with default scene having randomness. We'll just verify both rendered.
-	if img1 == nil || img2 == nil {
-		t.Fatal("one of the renders failed")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tracer := New(5, 5)
+			tracer.NumRaysPerPixel = tt.numRays
+			img := tracer.Render(DefaultScene())
+
+			if img == nil {
+				t.Fatal("Render returned nil")
+			}
+
+			// Verify all pixels have valid colors
+			for y := range 5 {
+				for x := range 5 {
+					_, _, _, a := img.At(x, y).RGBA()
+					if a != 0xffff {
+						t.Errorf("pixel (%d,%d) has invalid alpha", x, y)
+					}
+				}
+			}
+		})
 	}
 }
 

@@ -76,6 +76,11 @@ func SMul[T ~[3]float64](v T, t float64) T {
 	return T{v[0] * t, v[1] * t, v[2] * t}
 }
 
+// Mul: component-wise multiplication. returns u * v.
+func Mul[T ~[3]float64](u, v T) T {
+	return T{u[0] * v[0], u[1] * v[1], u[2] * v[2]}
+}
+
 // SDiv: divide by scalar.
 func SDiv[T ~[3]float64](v T, t float64) T {
 	return T{v[0] / t, v[1] / t, v[2] / t}

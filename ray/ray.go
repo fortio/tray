@@ -198,9 +198,6 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	upperLeftCorner := t.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
 	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
 
-	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
-	multipleRays := t.NumRaysPerPixel > 1
-
 	// Parallel rendering: divide work into horizontal bands
 	var wg sync.WaitGroup
 	rowsPerWorker := t.height / t.NumWorkers
@@ -212,36 +209,49 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		if i < remainder {
 			endY++
 		}
-		wg.Add(1)
-		go func(yStart, yEnd int) {
-			defer wg.Done()
-			//nolint:gosec // not crypto use.
-			rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-			for y := yStart; y < yEnd; y++ {
-				for x := range t.width {
-					// Compute ray for pixel (x, y)
-					// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
-					colorSum := ColorF{0, 0, 0}
-					for range t.NumRaysPerPixel {
-						deltaX, deltaY := 0.0, 0.0
-						if multipleRays {
-							deltaX, deltaY = SampleDiscRejRng(rng, t.RayRadius)
-						}
-						pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
-						rayDirection := pixel.Minus(t.Camera)
-						ray := Ray{Origin: t.Camera, Direction: rayDirection, rng: rng}
-						color := scene.RayColor(ray, t.MaxDepth)
-						colorSum = Add(colorSum, color)
-					}
-					avgColor := SMul(colorSum, colorSumDiv)
-					t.imageData.SetRGBA(x, y, avgColor.ToSRGBA())
-				}
-			}
-		}(startY, endY)
+		yStart := startY
+		yEnd := endY
+		wg.Go(func() {
+			t.RenderLines(yStart, yEnd, pixel00, pixelXVector, pixelYVector, scene)
+		})
 		startY = endY
 	}
 	wg.Wait()
 	return t.imageData
+}
+
+func (t *Tracer) RenderLines(yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene) {
+	//nolint:gosec // not crypto use.
+	rng := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+	multipleRays := t.NumRaysPerPixel > 1
+	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
+	pix := t.imageData.Pix
+	for y := yStart; y < yEnd; y++ {
+		for x := range t.width {
+			// Compute ray for pixel (x, y)
+			// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
+			colorSum := ColorF{0, 0, 0}
+			for range t.NumRaysPerPixel {
+				deltaX, deltaY := 0.0, 0.0
+				if multipleRays {
+					deltaX, deltaY = SampleDiscRejRng(rng, t.RayRadius)
+				}
+				pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
+				rayDirection := pixel.Minus(t.Camera)
+				ray := Ray{Origin: t.Camera, Direction: rayDirection, rng: rng}
+				color := scene.RayColor(ray, t.MaxDepth)
+				colorSum = Add(colorSum, color)
+			}
+			c := SMul(colorSum, colorSumDiv).ToSRGBA()
+			// inline SetRGBA for performance
+			off := t.imageData.PixOffset(x, y)
+			s := pix[off : off+4 : off+4]
+			s[0] = c.R
+			s[1] = c.G
+			s[2] = c.B
+			s[3] = 255
+		}
+	}
 }
 
 type Ray struct {

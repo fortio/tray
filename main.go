@@ -34,7 +34,7 @@ func SaveImage(img image.Image, fname string) error {
 	return nil
 }
 
-// NonRawTerminalSize: gets the coordinate from either normal one of the 3 fd.
+// NonRawTerminalSize: gets the terminal size from any of the 3 standard file descriptors (stdout, stderr, stdin).
 // TODO: move to ansipixels package as it's quite generally useful.
 func NonRawTerminalSize() (width, height int, err error) {
 	for _, attempt := range []*os.File{os.Stdout, os.Stderr, os.Stdin} {

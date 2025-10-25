@@ -166,6 +166,26 @@ func TestVec3SMul(t *testing.T) {
 	}
 }
 
+func TestVec3Mul(t *testing.T) {
+	u := Vec3{2, 3, 4}
+	v := Vec3{5, 6, 7}
+	result := Mul(u, v)
+	expected := Vec3{10, 18, 28}
+	if result != expected {
+		t.Errorf("Mul() = %v, want %v", result, expected)
+	}
+	// Test with ColorF
+	c1 := ColorF{0.5, 0.8, 1.0}
+	c2 := ColorF{0.2, 0.5, 0.3}
+	colorResult := Mul(c1, c2)
+	colorExpected := ColorF{0.1, 0.4, 0.3}
+	for i := range 3 {
+		if math.Abs(colorResult[i]-colorExpected[i]) > 1e-9 {
+			t.Errorf("Mul() color[%d] = %v, want %v", i, colorResult[i], colorExpected[i])
+		}
+	}
+}
+
 func TestVec3SDiv(t *testing.T) {
 	v := Vec3{10, 20, 30}
 	result := SDiv(v, 10)

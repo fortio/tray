@@ -34,9 +34,9 @@ func SaveImage(img image.Image, fname string) error {
 }
 
 func Main() int {
-	fSample := flag.Float64("s", 2, "Image supersampling factor")
-	fRays := flag.Int("r", 32, "Number of rays per pixel")
-	fMaxDepth := flag.Int("d", 8, "Maximum ray bounce depth")
+	fSample := flag.Float64("s", 4, "Image supersampling factor")
+	fRays := flag.Int("r", 64, "Number of rays per pixel")
+	fMaxDepth := flag.Int("d", 12, "Maximum ray bounce depth")
 	fWorkers := flag.Int("w", 0, "Number of parallel workers (0 = GOMAXPROCS)")
 	fCPUProfile := flag.String("profile-cpu", "", "Write CPU profile to file")
 	fExit := flag.Bool("exit", false, "Exit immediately after rendering the image once (for timing purposes)")

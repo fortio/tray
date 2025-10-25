@@ -10,9 +10,7 @@ import (
 
 // Tracer represents a ray tracing engine.
 type Tracer struct {
-	Camera          Vec3
-	FocalLength     float64
-	ViewportHeight  float64
+	*Camera
 	MaxDepth        int
 	NumRaysPerPixel int
 	RayRadius       float64
@@ -34,22 +32,21 @@ func New(width, height int) *Tracer {
 
 // Render performs the ray tracing and returns the resulting image data.
 func (t *Tracer) Render(scene *Scene) *image.RGBA {
+	if t.Camera == nil {
+		t.Camera = DefaultCamera()
+	}
 	if scene == nil {
 		scene = DefaultScene()
 		// For now/for this scene:
-		t.Camera = Vec3{0, .1, 5}
+		t.Camera.Position = Vec3{0, .1, 5}
+		t.FocalLength = 5
+		t.ViewportHeight = 1.5
 	}
 	// Need some/any light to get rays that aren't all black:
 	if scene.Background == nil {
 		scene.Background = DefaultBackground()
 	}
-	// Default camera / viewport setup
-	if t.FocalLength <= 0 {
-		t.FocalLength = 5
-	}
-	if t.ViewportHeight <= 0 {
-		t.ViewportHeight = 1.5
-	}
+	// Other default values:
 	if t.MaxDepth <= 0 {
 		t.MaxDepth = 10
 	}
@@ -71,7 +68,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	vertical := XYZ(0, -t.ViewportHeight, 0) // y axis is inverted in image vs our world.
 	pixelXVector := SDiv(horizontal, float64(t.width))
 	pixelYVector := SDiv(vertical, float64(t.height))
-	upperLeftCorner := t.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
+	upperLeftCorner := t.Camera.Position.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
 	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
 
 	// Parallel rendering: divide work into horizontal bands
@@ -117,8 +114,8 @@ func (t *Tracer) RenderLines(
 					deltaX, deltaY = rng.SampleDisc(t.RayRadius)
 				}
 				pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
-				rayDirection := pixel.Minus(t.Camera)
-				ray := rng.NewRay(t.Camera, rayDirection)
+				rayDirection := pixel.Minus(t.Camera.Position)
+				ray := rng.NewRay(t.Camera.Position, rayDirection)
 				color := scene.RayColor(ray, t.MaxDepth)
 				colorSum = Add(colorSum, color)
 			}

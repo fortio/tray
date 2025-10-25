@@ -113,6 +113,18 @@ func Random[T ~[3]float64]() T {
 	return T{rand.Float64(), rand.Float64(), rand.Float64()} //nolint:gosec // not crypto use.
 }
 
+// NearZero returns true if the vector is close to zero in all dimensions.
+func NearZero[T ~[3]float64](v T) bool {
+	// Return true if the vector is close to zero in all dimensions.
+	s := 1e-8
+	return (math.Abs(v[0]) < s) && (math.Abs(v[1]) < s) && (math.Abs(v[2]) < s)
+}
+
+// Reflect returns the reflection of vector v around normal n.
+func Reflect[T ~[3]float64](v, n T) T {
+	return Sub(v, SMul(n, 2*Dot(v, n)))
+}
+
 // RandomInRange generates a random vector with each component in the Interval
 // excluding the end.
 //

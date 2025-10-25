@@ -242,6 +242,7 @@ func (c ColorF) ToSRGBA() color.RGBA {
 	}
 }
 
+// ToRGBALinear converts a linear ColorF to linear color.RGBA, values must be in [0,1].
 func (c ColorF) ToRGBALinear() color.RGBA {
 	return color.RGBA{
 		R: uint8(math.Round(255. * float64(c[0]))),

@@ -291,3 +291,43 @@ var (
 	FrontEpsilon = Interval{Start: 1e-6, End: math.Inf(1)}
 	ZeroOne      = Interval{Start: 0, End: 1}
 )
+
+// SampleDiscRej returns a random point (x,y) within a disc of radius r.
+// Rejection sampling method.
+//
+//nolint:gosec // not crypto use.
+func SampleDiscRej(r float64) (x, y float64) {
+	for {
+		x = 2*rand.Float64() - 1.0
+		y = 2*rand.Float64() - 1.0
+		if x*x+y*y <= 1 {
+			break
+		}
+	}
+	return r * x, r * y
+}
+
+// SampleDiscRejRng returns a random point (x,y) within a disc of radius r
+// using the provided random source.
+func SampleDiscRejRng(rng *rand.Rand, r float64) (x, y float64) {
+	for {
+		x = 2*rng.Float64() - 1.0
+		y = 2*rng.Float64() - 1.0
+		if x*x+y*y <= 1 {
+			break
+		}
+	}
+	return r * x, r * y
+}
+
+// SampleDiscAngle returns a random point (x,y) within a disc of radius r.
+// Angle method.
+//
+//nolint:gosec // not crypto use.
+func SampleDiscAngle(r float64) (x, y float64) {
+	theta := 2.0 * math.Pi * rand.Float64()
+	rad := r * math.Sqrt(rand.Float64())
+	x = rad * math.Cos(theta)
+	y = rad * math.Sin(theta)
+	return x, y
+}

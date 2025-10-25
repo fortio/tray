@@ -91,20 +91,26 @@ type Scene struct {
 }
 
 func (s *Scene) RayColor(r Ray, depth int) ColorF {
-	if depth <= 0 {
-		return ColorF{0, 0, 0}
+	attenuation := ColorF{1.0, 1.0, 1.0}
+	currentRay := r
+
+	for range depth {
+		if hit, hr := s.Hit(currentRay, FrontEpsilon); hit {
+			attenuation = SMul(attenuation, 0.5)
+			direction := Add(hr.Normal, RandomUnitVectorRng[Vec3](currentRay.rng))
+			currentRay = Ray{Origin: hr.Point, Direction: direction, rng: currentRay.rng}
+		} else {
+			// Ray hit the sky
+			unit := Unit(currentRay.Direction)
+			a := 0.5 * (unit.Y() + 1.0)
+			white := ColorF{1.0, 1.0, 1.0}
+			blue := ColorF{0.4, 0.65, 1.0}
+			blend := Add(SMul(white, 1.0-a), SMul(blue, a))
+			return Mul(attenuation, blend)
+		}
 	}
-	if hit, hr := s.Hit(r, FrontEpsilon); hit {
-		direction := Add(hr.Normal, RandomUnitVectorRng[Vec3](r.rng))
-		newRay := Ray{Origin: hr.Point, Direction: direction, rng: r.rng}
-		return SMul(s.RayColor(newRay, depth-1), 0.5)
-	}
-	unit := Unit(r.Direction)
-	a := 0.5 * (unit.Y() + 1.0)
-	white := ColorF{1.0, 1.0, 1.0}
-	blue := ColorF{0.4, 0.65, 1.0}
-	blend := Add(SMul(white, 1.0-a), SMul(blue, a))
-	return blend
+	// Exceeded max depth
+	return ColorF{0, 0, 0}
 }
 
 // New creates and initializes a new Tracer.

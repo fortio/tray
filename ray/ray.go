@@ -209,11 +209,11 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		if i < remainder {
 			endY++
 		}
-		yStart := startY
-		yEnd := endY
-		wg.Go(func() {
+		wg.Add(1)
+		go (func(yStart, yEnd int) {
 			t.RenderLines(yStart, yEnd, pixel00, pixelXVector, pixelYVector, scene)
-		})
+			wg.Done()
+		})(startY, endY)
 		startY = endY
 	}
 	wg.Wait()

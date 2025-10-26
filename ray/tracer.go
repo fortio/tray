@@ -46,10 +46,15 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
 		scene = DefaultScene()
 		// For now/for this scene:
-		t.Position = Vec3{0, .5, 5}
-		t.LookAt = Vec3{-0.1, 0, -0.75} // look slight left and down and in front of the sphere
-		t.FocalLength = 5
-		t.ViewportHeight = 1.5
+		// t.Position = Vec3{0, .5, 5}
+		t.Position = Vec3{-2, 2, 1}
+		t.LookAt = Vec3{0, 0, -1}
+		t.VerticalFoV = 20.0
+		// t.LookAt = Vec3{-0.1, 0, -0.75} // look slight left and down and in front of the sphere
+		// t.FocalLength = 5
+		// t.VerticalFoV = 40.0
+		t.Aperture = .1
+		t.FocusDistance = Length(Sub(t.Position, t.LookAt))
 	}
 	// Need some/any light to get rays that aren't all black:
 	if scene.Background == nil {
@@ -110,13 +115,14 @@ func (t *Tracer) RenderLines(yStart, yEnd int, scene *Scene) {
 			// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
 			colorSum := ColorF{0, 0, 0}
 			for range t.NumRaysPerPixel {
-				deltaX, deltaY := 0.0, 0.0
+				// Sub-pixel offset for antialiasing
+				offsetX, offsetY := 0.0, 0.0 // Default to pixel center (0,0)
 				if multipleRays {
-					deltaX, deltaY = rng.SampleDisc(t.RayRadius)
+					// Random offset within pixel for antialiasing
+					offsetX, offsetY = rng.SampleDisc(t.RayRadius)
 				}
-				pixel := t.pixel00.Plus(t.pixelXVector.Times(float64(x)+deltaX), t.pixelYVector.Times(float64(y)+deltaY))
-				rayDirection := pixel.Minus(t.Position)
-				ray := rng.NewRay(t.Position, rayDirection)
+				// Generate ray with depth of field (if Aperture > 0)
+				ray := t.Camera.GetRay(rng, float64(x), float64(y), offsetX, offsetY)
 				color := scene.RayColor(ray, t.MaxDepth)
 				colorSum = Add(colorSum, color)
 			}

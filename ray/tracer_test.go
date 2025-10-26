@@ -108,14 +108,15 @@ func TestRender_CustomScene(t *testing.T) {
 func TestRender_DefaultParameters(t *testing.T) {
 	tracer := New(5, 5)
 	// Don't set any parameters, let them all be defaults
-	_ = tracer.Render(nil)
+	_ = tracer.Render(DefaultScene())
 
 	// Verify defaults were applied
-	if tracer.FocalLength != 5 {
-		t.Errorf("FocalLength = %f, want 5", tracer.FocalLength)
+	// FocalLength and VerticalFoV get Camera.Initialize defaults (1.0 and 90.0)
+	if tracer.FocalLength != 1.0 {
+		t.Errorf("FocalLength = %f, want 1.0", tracer.FocalLength)
 	}
-	if tracer.ViewportHeight != 1.5 {
-		t.Errorf("ViewportHeight = %f, want 1.5", tracer.ViewportHeight)
+	if tracer.VerticalFoV != 90.0 {
+		t.Errorf("VerticalFoV = %f, want 90.0", tracer.VerticalFoV)
 	}
 	if tracer.MaxDepth != 10 {
 		t.Errorf("MaxDepth = %d, want 10", tracer.MaxDepth)
@@ -136,7 +137,7 @@ func TestRender_CustomParameters(t *testing.T) {
 	tracer := New(5, 5)
 	tracer.Position = Vec3{1, 2, 3}
 	tracer.FocalLength = 10
-	tracer.ViewportHeight = 2.0
+	tracer.VerticalFoV = 45.0
 	tracer.MaxDepth = 20
 	tracer.NumRaysPerPixel = 4
 	tracer.RayRadius = 1.0
@@ -151,8 +152,8 @@ func TestRender_CustomParameters(t *testing.T) {
 	if tracer.FocalLength != 10 {
 		t.Errorf("FocalLength = %f, want 10", tracer.FocalLength)
 	}
-	if tracer.ViewportHeight != 2.0 {
-		t.Errorf("ViewportHeight = %f, want 2.0", tracer.ViewportHeight)
+	if tracer.VerticalFoV != 45.0 {
+		t.Errorf("VerticalFoV = %f, want 45.0", tracer.VerticalFoV)
 	}
 	if tracer.MaxDepth != 20 {
 		t.Errorf("MaxDepth = %d, want 20", tracer.MaxDepth)
@@ -257,7 +258,7 @@ func TestRender_MultipleRaysPerPixel(t *testing.T) {
 func TestRenderLines(t *testing.T) {
 	tracer := New(10, 10)
 	tracer.FocalLength = 5
-	tracer.ViewportHeight = 1.5
+	tracer.VerticalFoV = 30.0
 	tracer.MaxDepth = 10
 	tracer.NumRaysPerPixel = 1
 	tracer.RayRadius = 0.5

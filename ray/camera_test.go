@@ -2,6 +2,8 @@ package ray
 
 import "testing"
 
+var zero Vec3
+
 func TestCamera_Initialize_PositionEqualsLookAt(t *testing.T) {
 	// Test that Initialize handles Position == LookAt without panicking
 	camera := Camera{
@@ -13,13 +15,13 @@ func TestCamera_Initialize_PositionEqualsLookAt(t *testing.T) {
 	camera.Initialize(100, 100)
 
 	// Verify that computed fields are set (non-zero)
-	if camera.pixel00 == (Vec3{}) {
+	if camera.pixel00 == zero {
 		t.Error("pixel00 should be initialized")
 	}
-	if camera.pixelXVector == (Vec3{}) {
+	if camera.pixelXVector == zero {
 		t.Error("pixelXVector should be initialized")
 	}
-	if camera.pixelYVector == (Vec3{}) {
+	if camera.pixelYVector == zero {
 		t.Error("pixelYVector should be initialized")
 	}
 }
@@ -44,13 +46,13 @@ func TestCamera_Initialize_Defaults(t *testing.T) {
 	}
 
 	// Verify computed fields are initialized
-	if camera.pixel00 == (Vec3{}) {
+	if camera.pixel00 == zero {
 		t.Error("pixel00 should be initialized")
 	}
-	if camera.pixelXVector == (Vec3{}) {
+	if camera.pixelXVector == zero {
 		t.Error("pixelXVector should be initialized")
 	}
-	if camera.pixelYVector == (Vec3{}) {
+	if camera.pixelYVector == zero {
 		t.Error("pixelYVector should be initialized")
 	}
 }
@@ -81,13 +83,13 @@ func TestCamera_Initialize_CustomValues(t *testing.T) {
 	}
 
 	// Verify computed fields are initialized
-	if camera.pixel00 == (Vec3{}) {
+	if camera.pixel00 == zero {
 		t.Error("pixel00 should be initialized")
 	}
-	if camera.pixelXVector == (Vec3{}) {
+	if camera.pixelXVector == zero {
 		t.Error("pixelXVector should be initialized")
 	}
-	if camera.pixelYVector == (Vec3{}) {
+	if camera.pixelYVector == zero {
 		t.Error("pixelYVector should be initialized")
 	}
 }

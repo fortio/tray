@@ -45,7 +45,7 @@ func (c *Camera) Initialize(width, height int) {
 	if c.VerticalFoV == 0 {
 		c.VerticalFoV = 90.0 // Default to 90 degree field of view
 	}
-	if c.Up == (Vec3{}) {
+	if c.Up == zero {
 		c.Up = Vec3{0, 1, 0}
 	}
 	if c.FocusDistance == 0 {

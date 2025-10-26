@@ -97,8 +97,8 @@ func (c *Camera) Initialize(width, height int) {
 	c.pixelYVector = SDiv(vertical, float64(height))
 	// Upper left corner of viewport
 	upperLeftCorner := c.Position.Minus(SMul(w, c.FocalLength), horizontal.Times(0.5), vertical.Times(0.5))
-	// pixel00 is the upper-left corner - offsets are added to get to pixel centers
-	c.pixel00 = upperLeftCorner
+	// pixel00 is the center of pixel (0,0)
+	c.pixel00 = upperLeftCorner.Plus(Add(c.pixelXVector, c.pixelYVector).Times(0.5))
 }
 
 // GetRay generates a ray from the camera through the specified pixel coordinates,
@@ -109,10 +109,10 @@ func (c *Camera) Initialize(width, height int) {
 //   - (0.5, 0.5) = lower-right corner
 func (c *Camera) GetRay(rng Rand, pixelX, pixelY, offsetX, offsetY float64) *Ray {
 	// Compute the point on the viewport
-	// offset (0,0) = pixel center, so we add 0.5 to get from upper-left corner to center
+	// offset (0,0) = pixel center, pixel00 already points to center of pixel (0,0)
 	pixelSample := c.pixel00.Plus(
-		c.pixelXVector.Times(pixelX+0.5+offsetX),
-		c.pixelYVector.Times(pixelY+0.5+offsetY),
+		c.pixelXVector.Times(pixelX+offsetX),
+		c.pixelYVector.Times(pixelY+offsetY),
 	)
 
 	// Ray from camera position through the pixel sample

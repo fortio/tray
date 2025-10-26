@@ -165,3 +165,71 @@ func TestCamera_FocusDistance_Default(t *testing.T) {
 		t.Errorf("FocusDistance = %f, want %f (FocalLength)", camera.FocusDistance, camera.FocalLength)
 	}
 }
+
+func TestCamera_GetRay_PixelCenter(t *testing.T) {
+	// Test that offset (0,0) produces a ray through the exact pixel center
+	// Simple camera setup for easy math verification
+	camera := Camera{
+		Position:    Vec3{0, 0, 0},  // Camera at origin
+		LookAt:      Vec3{0, 0, -1}, // Looking down -Z
+		VerticalFoV: 90.0,
+		FocalLength: 1.0,
+	}
+	camera.Initialize(10, 10) // 10x10 image
+
+	rng := NewRandomSource()
+
+	// Get ray for pixel (5, 5) with offset (0, 0) - should be exact center
+	ray := camera.GetRay(rng, 5, 5, 0.0, 0.0)
+
+	// Ray origin should be camera position
+	if ray.Origin != camera.Position {
+		t.Errorf("Ray origin = %v, want %v", ray.Origin, camera.Position)
+	}
+
+	// The ray should point to pixel00 + 5*pixelXVector + 5*pixelYVector
+	// This is the center of pixel (5, 5)
+	expectedTarget := camera.pixel00.Plus(
+		SMul(camera.pixelXVector, 5),
+		SMul(camera.pixelYVector, 5),
+	)
+
+	// Ray direction should point toward expectedTarget
+	// Normalize both to compare directions
+	expectedDir := Unit(Sub(expectedTarget, camera.Position))
+	actualDir := Unit(ray.Direction)
+
+	// Check if directions are essentially the same (within floating point tolerance)
+	diff := Sub(expectedDir, actualDir)
+	if !NearZero(diff) {
+		t.Errorf("Ray direction mismatch:\nExpected: %v\nActual: %v\nDiff: %v",
+			expectedDir, actualDir, diff)
+	}
+}
+
+func TestCamera_GetRay_OffsetFromCenter(t *testing.T) {
+	// Test that non-zero offsets produce rays offset from pixel center
+	camera := Camera{
+		Position:    Vec3{0, 0, 0},
+		LookAt:      Vec3{0, 0, -1},
+		VerticalFoV: 90.0,
+		FocalLength: 1.0,
+	}
+	camera.Initialize(10, 10)
+
+	rng := NewRandomSource()
+
+	// Get rays with different offsets for the same pixel
+	rayCenter := camera.GetRay(rng, 5, 5, 0.0, 0.0)
+	rayOffset := camera.GetRay(rng, 5, 5, 0.3, 0.2)
+
+	// Directions should be different (pointing to different parts of the pixel)
+	if rayCenter.Direction == rayOffset.Direction {
+		t.Error("Expected different ray directions for different offsets")
+	}
+
+	// Origins should be the same (no aperture)
+	if rayCenter.Origin != rayOffset.Origin {
+		t.Error("Ray origins should be the same with aperture=0")
+	}
+}

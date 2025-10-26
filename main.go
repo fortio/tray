@@ -114,7 +114,7 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 		}
 		img := rt.Render(nil) // default scene
 		pb.End()
-		if fname != "" && showSplash {
+		if fname != "" && (showSplash || exitAfterRender) {
 			// only save once, not after keypresses
 			err := SaveImage(img, fname)
 			if err != nil {

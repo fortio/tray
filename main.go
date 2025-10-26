@@ -95,6 +95,8 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 	var resized *image.RGBA
 	showSplash := normalRawMode
 	fname := *fSave
+	rand := ray.NewRandomSource()
+	scene := ray.RichScene(rand)
 	ap.OnResize = func() error {
 		ap.ClearScreen()
 		// render at supersampled resolution
@@ -103,6 +105,13 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 		rt.MaxDepth = *fMaxDepth
 		rt.NumRaysPerPixel = *fRays
 		rt.NumWorkers = *fWorkers
+		// Camera setup:
+		rt.VerticalFoV = 20
+		rt.Position = ray.XYZ(13, 2, 3)
+		rt.LookAt = ray.XYZ(0, 0, 0)
+		// default Vup is up
+		rt.Aperture = 0.1
+		rt.FocusDistance = 10.0
 		// Setup progress bar
 		pb := progressbar.NewBar()
 		pb.Prefix = "Rendering "
@@ -112,7 +121,7 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 		rt.ProgressFunc = func(n int) {
 			p.Update(n)
 		}
-		img := rt.Render(nil) // default scene
+		img := rt.Render(scene)
 		pb.End()
 		if fname != "" && (showSplash || exitAfterRender) {
 			// only save once, not after keypresses

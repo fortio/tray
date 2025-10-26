@@ -108,7 +108,7 @@ func TestRender_CustomScene(t *testing.T) {
 func TestRender_DefaultParameters(t *testing.T) {
 	tracer := New(5, 5)
 	// Don't set any parameters, let them all be defaults
-	_ = tracer.Render(nil)
+	_ = tracer.Render(DefaultScene())
 
 	// Verify defaults were applied
 	// FocalLength and VerticalFoV get Camera.Initialize defaults (1.0 and 90.0)

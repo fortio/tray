@@ -23,6 +23,8 @@ Current demo scene
 
 ![Example](example.png)
 
+(Created using `tray -save example.png -r 64 -s 8 -d 50 -seed 2 > /tmp/example.ansi` on a 160x45 terminal.
+It does take a while, 3 minutes on 11 core M3 pro)
 
 ## Install
 You can get the binary from [releases](https://github.com/fortio/tray/releases)

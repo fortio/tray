@@ -177,7 +177,7 @@ func TestCamera_GetRay_PixelCenter(t *testing.T) {
 	}
 	camera.Initialize(10, 10) // 10x10 image
 
-	rng := NewRandomSource()
+	rng := NewRand(42)
 
 	// Get ray for pixel (5, 5) with offset (0, 0) - should be exact center
 	ray := camera.GetRay(rng, 5, 5, 0.0, 0.0)

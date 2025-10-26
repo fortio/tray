@@ -151,7 +151,7 @@ func RichScene(rand Rand) *Scene {
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				case chooseMat < 0.95:
 					// metal
-					albedo := SMul(Random[ColorF](rand), 0.5)
+					albedo := RandomInRange[ColorF](rand, Interval{0.5, 1.0})
 					fuzz := rand.Float64() * 0.5
 					sphereMaterial = Metal{Albedo: albedo, Fuzz: fuzz}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})

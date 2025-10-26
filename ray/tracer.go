@@ -1,5 +1,16 @@
 // Package ray implements ray tracing on a small image.
 // Inspired by https://raytracing.github.io/books/RayTracingInOneWeekend.html
+//
+// Coordinate System:
+// This package uses a right-handed coordinate system with:
+//   - +X points right
+//   - +Y points up
+//   - +Z points backward (toward the camera)
+//   - -Z points forward (into the scene)
+//
+// Scene objects should be positioned at negative Z values to appear in front
+// of a camera at the origin. For example, a sphere at Vec3{0, 0, -5} is 5 units
+// in front of a camera at Vec3{0, 0, 0} looking at Vec3{0, 0, -1}.
 package ray
 
 import (
@@ -10,9 +21,7 @@ import (
 
 // Tracer represents a ray tracing engine.
 type Tracer struct {
-	Camera          Vec3
-	FocalLength     float64
-	ViewportHeight  float64
+	Camera
 	MaxDepth        int
 	NumRaysPerPixel int
 	RayRadius       float64
@@ -37,19 +46,16 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
 		scene = DefaultScene()
 		// For now/for this scene:
-		t.Camera = Vec3{0, .1, 5}
+		t.Position = Vec3{0, .5, 5}
+		t.LookAt = Vec3{-0.1, 0, -0.75} // look slight left and down and in front of the sphere
+		t.FocalLength = 5
+		t.ViewportHeight = 1.5
 	}
 	// Need some/any light to get rays that aren't all black:
 	if scene.Background == nil {
 		scene.Background = DefaultBackground()
 	}
-	// Default camera / viewport setup
-	if t.FocalLength <= 0 {
-		t.FocalLength = 5
-	}
-	if t.ViewportHeight <= 0 {
-		t.ViewportHeight = 1.5
-	}
+	// Other default values:
 	if t.MaxDepth <= 0 {
 		t.MaxDepth = 10
 	}
@@ -65,14 +71,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	// And zero value (0,0,0) for Camera is the right default
 	// (when not hardcoded in nil scene case above).
 
-	aspectRatio := float64(t.width) / float64(t.height)
-	viewportWidth := aspectRatio * t.ViewportHeight
-	horizontal := XYZ(viewportWidth, 0, 0)
-	vertical := XYZ(0, -t.ViewportHeight, 0) // y axis is inverted in image vs our world.
-	pixelXVector := SDiv(horizontal, float64(t.width))
-	pixelYVector := SDiv(vertical, float64(t.height))
-	upperLeftCorner := t.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, t.FocalLength})
-	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5)) // up + (px + py)/2 (center of pixel)
+	// Initialize camera viewport parameters (and set camera defaults if needed)
+	t.Camera.Initialize(t.width, t.height)
 
 	// Parallel rendering: divide work into horizontal bands
 	var wg sync.WaitGroup
@@ -87,7 +87,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		}
 		wg.Add(1)
 		go (func(yStart, yEnd int) {
-			t.RenderLines(yStart, yEnd, pixel00, pixelXVector, pixelYVector, scene)
+			t.RenderLines(yStart, yEnd, scene)
 			wg.Done()
 		})(startY, endY)
 		startY = endY
@@ -96,9 +96,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	return t.imageData
 }
 
-func (t *Tracer) RenderLines(
-	yStart, yEnd int, pixel00 Vec3, pixelXVector Vec3, pixelYVector Vec3, scene *Scene,
-) {
+func (t *Tracer) RenderLines(yStart, yEnd int, scene *Scene) {
 	rng := NewRandomSource()
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
@@ -116,9 +114,9 @@ func (t *Tracer) RenderLines(
 				if multipleRays {
 					deltaX, deltaY = rng.SampleDisc(t.RayRadius)
 				}
-				pixel := pixel00.Plus(pixelXVector.Times(float64(x)+deltaX), pixelYVector.Times(float64(y)+deltaY))
-				rayDirection := pixel.Minus(t.Camera)
-				ray := rng.NewRay(t.Camera, rayDirection)
+				pixel := t.pixel00.Plus(t.pixelXVector.Times(float64(x)+deltaX), t.pixelYVector.Times(float64(y)+deltaY))
+				rayDirection := pixel.Minus(t.Position)
+				ray := rng.NewRay(t.Position, rayDirection)
 				color := scene.RayColor(ray, t.MaxDepth)
 				colorSum = Add(colorSum, color)
 			}

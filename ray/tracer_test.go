@@ -108,7 +108,7 @@ func TestRender_CustomScene(t *testing.T) {
 func TestRender_DefaultParameters(t *testing.T) {
 	tracer := New(5, 5)
 	// Don't set any parameters, let them all be defaults
-	_ = tracer.Render(DefaultScene())
+	_ = tracer.Render(nil)
 
 	// Verify defaults were applied
 	if tracer.FocalLength != 5 {
@@ -134,7 +134,7 @@ func TestRender_DefaultParameters(t *testing.T) {
 
 func TestRender_CustomParameters(t *testing.T) {
 	tracer := New(5, 5)
-	tracer.Camera = Vec3{1, 2, 3}
+	tracer.Position = Vec3{1, 2, 3}
 	tracer.FocalLength = 10
 	tracer.ViewportHeight = 2.0
 	tracer.MaxDepth = 20
@@ -145,8 +145,8 @@ func TestRender_CustomParameters(t *testing.T) {
 	_ = tracer.Render(DefaultScene())
 
 	// Verify custom values are preserved
-	if tracer.Camera != (Vec3{1, 2, 3}) {
-		t.Errorf("Camera = %v, want {1, 2, 3}", tracer.Camera)
+	if tracer.Position != (Vec3{1, 2, 3}) {
+		t.Errorf("Position = %v, want {1, 2, 3}", tracer.Position)
 	}
 	if tracer.FocalLength != 10 {
 		t.Errorf("FocalLength = %f, want 10", tracer.FocalLength)
@@ -263,17 +263,11 @@ func TestRenderLines(t *testing.T) {
 	tracer.RayRadius = 0.5
 
 	scene := DefaultScene()
-	aspectRatio := float64(tracer.width) / float64(tracer.height)
-	viewportWidth := aspectRatio * tracer.ViewportHeight
-	horizontal := XYZ(viewportWidth, 0, 0)
-	vertical := XYZ(0, -tracer.ViewportHeight, 0)
-	pixelXVector := SDiv(horizontal, float64(tracer.width))
-	pixelYVector := SDiv(vertical, float64(tracer.height))
-	upperLeftCorner := tracer.Camera.Minus(horizontal.Times(0.5), vertical.Times(0.5), Vec3{0, 0, tracer.FocalLength})
-	pixel00 := upperLeftCorner.Plus(Add(pixelXVector, pixelYVector).Times(0.5))
+	// Initialize camera viewport parameters
+	tracer.Camera.Initialize(tracer.width, tracer.height)
 
 	// Render just the first 3 lines
-	tracer.RenderLines(0, 3, pixel00, pixelXVector, pixelYVector, scene)
+	tracer.RenderLines(0, 3, scene)
 
 	// Check that first 3 rows are rendered (non-zero alpha)
 	for y := range 3 {

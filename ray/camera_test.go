@@ -233,3 +233,43 @@ func TestCamera_GetRay_OffsetFromCenter(t *testing.T) {
 		t.Error("Ray origins should be the same with aperture=0")
 	}
 }
+
+func TestRichSceneCamera_RendersNonBlackImage(t *testing.T) {
+	// Test that RichSceneCamera + RichScene produces a non-black image
+	// Use very low resolution to keep test fast
+	width, height := 20, 20
+	rng := NewRandomSource()
+	scene := RichScene(rng)
+
+	tracer := New(width, height)
+	tracer.Camera = RichSceneCamera()
+	tracer.MaxDepth = 10
+	tracer.NumRaysPerPixel = 2 // Low but not 1, to get some antialiasing
+
+	img := tracer.Render(scene)
+
+	// Check that the image is not all black
+	// Count non-black pixels
+	nonBlackPixels := 0
+	totalPixels := width * height
+
+	for y := range height {
+		for x := range width {
+			r, g, b, _ := img.At(x, y).RGBA()
+			// RGBA() returns values in [0, 65535] range
+			if r > 0 || g > 0 || b > 0 {
+				nonBlackPixels++
+			}
+		}
+	}
+
+	// At least 50% of pixels should have some color
+	// (the scene should render spheres against a background)
+	minNonBlackPixels := totalPixels / 2
+	if nonBlackPixels < minNonBlackPixels {
+		t.Errorf("Image is mostly black: only %d/%d pixels are non-black (expected at least %d)",
+			nonBlackPixels, totalPixels, minNonBlackPixels)
+	}
+
+	t.Logf("Rendered RichScene with %d/%d non-black pixels", nonBlackPixels, totalPixels)
+}

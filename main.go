@@ -106,12 +106,7 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 		rt.NumRaysPerPixel = *fRays
 		rt.NumWorkers = *fWorkers
 		// Camera setup:
-		rt.VerticalFoV = 20
-		rt.Position = ray.XYZ(13, 2, 3)
-		rt.LookAt = ray.XYZ(0, 0, 0)
-		// default Vup is up
-		rt.Aperture = 0.1
-		rt.FocusDistance = 10.0
+		rt.Camera = ray.RichSceneCamera()
 		// Setup progress bar
 		pb := progressbar.NewBar()
 		pb.Prefix = "Rendering "

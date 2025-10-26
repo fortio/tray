@@ -54,6 +54,18 @@ func Dot[T ~[3]float64](u, v T) float64 {
 	return u[0]*v[0] + u[1]*v[1] + u[2]*v[2]
 }
 
+// Cross computes the cross product of two vectors.
+// The result is a vector perpendicular to both u and v, with magnitude equal to
+// the area of the parallelogram formed by u and v. The direction follows the
+// right-hand rule: point fingers along u, curl them toward v, thumb points along u×v.
+// Common uses:
+//   - Finding perpendicular vectors (e.g., camera right = up × forward)
+//   - Computing surface normals from two edge vectors
+//   - Determining rotation axis between two vectors
+func Cross[T ~[3]float64](u, v T) T {
+	return T{u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]}
+}
+
 // Plus adds one or more vectors to v.
 // Returns v + others[0] + others[1] + ...
 // This is a convenience method wrapper around AddMultiple.

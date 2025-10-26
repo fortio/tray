@@ -1,5 +1,16 @@
 // Package ray implements ray tracing on a small image.
 // Inspired by https://raytracing.github.io/books/RayTracingInOneWeekend.html
+//
+// Coordinate System:
+// This package uses a right-handed coordinate system with:
+//   - +X points right
+//   - +Y points up
+//   - +Z points backward (toward the camera)
+//   - -Z points forward (into the scene)
+//
+// Scene objects should be positioned at negative Z values to appear in front
+// of a camera at the origin. For example, a sphere at Vec3{0, 0, -5} is 5 units
+// in front of a camera at Vec3{0, 0, 0} looking at Vec3{0, 0, -1}.
 package ray
 
 import (
@@ -35,8 +46,8 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	if scene == nil {
 		scene = DefaultScene()
 		// For now/for this scene:
-		t.Position = Vec3{0, .1, 5}
-		t.LookAt = Vec3{0, 0, 0}
+		t.Position = Vec3{0, .5, 5}
+		t.LookAt = Vec3{-0.1, 0, -0.75} // look slight left and down and in front of the sphere
 		t.FocalLength = 5
 		t.ViewportHeight = 1.5
 	}

@@ -17,6 +17,8 @@ Compared to the book:
 - It uses goroutines to render faster (yeah go)
 - It can render to any ANSI terminal (truecolor support being better)
 - While also saving the full resolution as regular PNG (instead of PPM)
+- Lots of (generated, mostly) tests
+- You can specify a specific seed for the scene, for reproducible results
 - WIP: navigation in the world
 
 Current demo scene

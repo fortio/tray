@@ -25,6 +25,7 @@ type Camera struct {
 // Initialize computes the viewport parameters for the given image dimensions.
 // Sets default values for any zero-valued fields. Must be called before rendering.
 func (c *Camera) Initialize(width, height int) {
+	var zero Vec3
 	// Set defaults for zero-valued fields
 	if c.FocalLength == 0 {
 		c.FocalLength = 1.0
@@ -32,14 +33,23 @@ func (c *Camera) Initialize(width, height int) {
 	if c.ViewportHeight == 0 {
 		c.ViewportHeight = 2.0
 	}
-	if c.Up == (Vec3{}) {
+	if c.Up == zero {
 		c.Up = Vec3{0, 1, 0}
 	}
-	if c.LookAt == (Vec3{}) {
+	// If both Position and LookAt are at origin, set LookAt to look down -Z
+	if c.Position == zero && c.LookAt == zero {
 		c.LookAt = Vec3{0, 0, -1}
 	}
 	// Position default is (0,0,0) which is already the zero value
 	// Aperture default is 0 (pinhole) which is already the zero value
+
+	// Validate that Position and LookAt are different
+	viewDirection := Sub(c.Position, c.LookAt)
+	if NearZero(viewDirection) {
+		// Position == LookAt, can't determine view direction.
+		// Default to looking down -Z axis (w points toward +Z).
+		viewDirection = Vec3{0, 0, 1}
+	}
 
 	// Compute camera basis vectors from LookAt and Up.
 	// This forms a right-handed orthonormal coordinate system:
@@ -47,7 +57,7 @@ func (c *Camera) Initialize(width, height int) {
 	// u: points to the right (Up × w, perpendicular to both)
 	// v: points up in camera space (w × u, perpendicular to both, adjusted by Up)
 	// Note: Changing Up rotates the camera around the view axis (roll).
-	w := Unit(Sub(c.Position, c.LookAt))
+	w := Unit(viewDirection)
 	u := Unit(Cross(c.Up, w))
 	v := Cross(w, u)
 

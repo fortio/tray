@@ -4,6 +4,10 @@ import "testing"
 
 var zero Vec3
 
+func RandForTests() Rand {
+	return NewRand(42)
+}
+
 func TestCamera_Initialize_PositionEqualsLookAt(t *testing.T) {
 	// Test that Initialize handles Position == LookAt without panicking
 	camera := Camera{
@@ -104,7 +108,7 @@ func TestCamera_GetRay_Pinhole(t *testing.T) {
 	}
 	camera.Initialize(100, 100)
 
-	rng := NewRandomSource()
+	rng := RandForTests()
 	ray1 := camera.GetRay(rng, 50, 50, 0.0, 0.0)
 	ray2 := camera.GetRay(rng, 50, 50, 0.0, 0.0)
 	ray3 := camera.GetRay(rng, 25, 75, 0.0, 0.0)
@@ -132,7 +136,7 @@ func TestCamera_GetRay_DepthOfField(t *testing.T) {
 	}
 	camera.Initialize(100, 100)
 
-	rng := NewRandomSource()
+	rng := RandForTests()
 	ray1 := camera.GetRay(rng, 50, 50, 0.0, 0.0)
 	ray2 := camera.GetRay(rng, 50, 50, 0.0, 0.0)
 
@@ -217,7 +221,7 @@ func TestCamera_GetRay_OffsetFromCenter(t *testing.T) {
 	}
 	camera.Initialize(10, 10)
 
-	rng := NewRandomSource()
+	rng := RandForTests()
 
 	// Get rays with different offsets for the same pixel
 	rayCenter := camera.GetRay(rng, 5, 5, 0.0, 0.0)
@@ -238,7 +242,7 @@ func TestRichSceneCamera_RendersNonBlackImage(t *testing.T) {
 	// Test that RichSceneCamera + RichScene produces a non-black image
 	// Use very low resolution to keep test fast
 	width, height := 20, 20
-	rng := NewRandomSource()
+	rng := RandForTests()
 	scene := RichScene(rng)
 
 	tracer := New(width, height)

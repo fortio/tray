@@ -501,7 +501,7 @@ func TestRandom(t *testing.T) {
 	const samples = 10
 	results := sets.New[Vec3]()
 	expected := Interval{Start: 0.0, End: 1.0}
-	r := NewRandomSource()
+	r := RandForTests()
 	for range samples {
 		v := Random[Vec3](r)
 		// Check each component is in [0,1)
@@ -521,7 +521,7 @@ func TestRandom(t *testing.T) {
 // TestRandomUnitVectorCorrectness verifies that all three RandomUnitVector variants
 // produce vectors of unit length.
 func TestRandomUnitVectorCorrectness(t *testing.T) {
-	r := NewRandomSource()
+	r := RandForTests()
 	tests := []struct {
 		name string
 		fn   func(Rand) Vec3
@@ -571,7 +571,7 @@ func TestRandomUnitVectorDistribution(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			const samples = 100000
-			r := NewRandomSource()
+			r := RandForTests()
 
 			// Track statistics
 			var sumX, sumY, sumZ float64
@@ -674,7 +674,7 @@ func TestRandomUnitVectorNoBias(t *testing.T) {
 		const samples = 10000
 		const bins = 20
 		histogram := make([]int, bins)
-		r := NewRandomSource()
+		r := RandForTests()
 
 		for range samples {
 			v := RandomUnitVectorAngle[Vec3](r)
@@ -709,7 +709,7 @@ func TestRandomUnitVectorNoBias(t *testing.T) {
 		// So we expect roughly 52% acceptance rate
 		// This is a smoke test, not a statistical test
 		const samples = 1000
-		r := NewRandomSource()
+		r := RandForTests()
 		for range samples {
 			_ = RandomUnitVectorRej[Vec3](r)
 		}
@@ -733,7 +733,7 @@ func TestRandomOnHemisphere(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := NewRandomSource()
+			r := RandForTests()
 			const samples = 100
 			for range samples {
 				v := RandomOnHemisphere(r, tt.normal)
@@ -755,7 +755,7 @@ func TestRandomOnHemisphere(t *testing.T) {
 }
 
 func TestRandFloat64(t *testing.T) {
-	r := NewRandomSource()
+	r := RandForTests()
 	const samples = 1000
 	for range samples {
 		v := r.Float64()
@@ -766,7 +766,7 @@ func TestRandFloat64(t *testing.T) {
 }
 
 func TestSampleDisc(t *testing.T) {
-	r := NewRandomSource()
+	r := RandForTests()
 	radius := 2.5
 	const samples = 1000
 
@@ -783,7 +783,7 @@ func TestSampleDisc(t *testing.T) {
 }
 
 func TestSampleDiscAngle(t *testing.T) {
-	r := NewRandomSource()
+	r := RandForTests()
 	radius := 3.0
 	const samples = 1000
 
@@ -801,7 +801,7 @@ func TestSampleDiscAngle(t *testing.T) {
 
 func TestSampleDiscMethods(t *testing.T) {
 	// Compare both methods produce valid results
-	r := NewRandomSource()
+	r := RandForTests()
 	radius := 1.0
 	const samples = 100
 
@@ -827,21 +827,21 @@ func TestSampleDiscMethods(t *testing.T) {
 // Benchmarks for comparing the three methods
 
 func BenchmarkRandomUnitVector(b *testing.B) {
-	r := NewRandomSource()
+	r := RandForTests()
 	for range b.N {
 		_ = RandomUnitVectorRej[Vec3](r)
 	}
 }
 
 func BenchmarkRandomUnitVectorAngle(b *testing.B) {
-	r := NewRandomSource()
+	r := RandForTests()
 	for range b.N {
 		_ = RandomUnitVectorAngle[Vec3](r)
 	}
 }
 
 func BenchmarkRandomUnitVectorNorm(b *testing.B) {
-	r := NewRandomSource()
+	r := RandForTests()
 	for range b.N {
 		_ = RandomUnitVector[Vec3](r)
 	}

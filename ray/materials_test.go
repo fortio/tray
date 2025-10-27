@@ -6,7 +6,7 @@ import (
 )
 
 func TestLambertianScatter(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	lambertian := Lambertian{Albedo: ColorF{0.5, 0.5, 0.5}}
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 	rec := HitRecord{
@@ -30,7 +30,7 @@ func TestLambertianScatter(t *testing.T) {
 }
 
 func TestMetalScatter(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	metal := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
 	rayDir := Unit(Vec3{1, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
@@ -56,7 +56,7 @@ func TestMetalScatter(t *testing.T) {
 }
 
 func TestMetalScatterWithFuzz(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	metal := Metal{Albedo: ColorF{0.9, 0.9, 0.9}, Fuzz: 0.3}
 	rayDir := Unit(Vec3{1, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
@@ -80,7 +80,7 @@ func TestMetalScatterWithFuzz(t *testing.T) {
 }
 
 func TestMetalScatterAbsorbedWhenReflectionBelowSurface(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	// High fuzz (>1) can cause scatter to be absorbed when fuzzed reflection goes below surface
 	metal := Metal{Albedo: ColorF{0.7, 0.7, 0.7}, Fuzz: 1.5}
 	rayDir := Unit(Vec3{1, -1, 0})
@@ -111,7 +111,7 @@ func TestMetalScatterAbsorbedWhenReflectionBelowSurface(t *testing.T) {
 }
 
 func TestDielectricScatterFrontFace(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	dielectric := Dielectric{RefIdx: 1.5}
 	rayDir := Unit(Vec3{0, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
@@ -139,7 +139,7 @@ func TestDielectricScatterFrontFace(t *testing.T) {
 }
 
 func TestDielectricScatterBackFace(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	dielectric := Dielectric{RefIdx: 1.5}
 	rayDir := Unit(Vec3{0, 1, 0})
 	ray := rnd.NewRay(Vec3{0, -2, 0}, rayDir)
@@ -165,7 +165,7 @@ func TestDielectricScatterBackFace(t *testing.T) {
 
 func TestDielectricScatterVariousAngles(t *testing.T) {
 	// Test different incident angles to exercise both refraction and reflection paths
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	dielectric := Dielectric{RefIdx: 1.5}
 
 	tests := []struct {

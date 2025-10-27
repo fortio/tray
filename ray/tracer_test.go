@@ -268,7 +268,7 @@ func TestRenderLines(t *testing.T) {
 	tracer.Camera.Initialize(tracer.width, tracer.height)
 
 	// Render just the first 3 lines
-	tracer.RenderLines(0, 3, scene)
+	tracer.RenderLines(0, 0, 3, scene)
 
 	// Check that first 3 rows are rendered (non-zero alpha)
 	for y := range 3 {

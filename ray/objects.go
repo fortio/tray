@@ -24,14 +24,14 @@ type Hittable interface {
 }
 
 type Scene struct {
-	Objects    []Hittable
+	Objects    []Sphere
 	Background AmbientLight
 }
 
 func (s *Scene) Hit(r *Ray, interval Interval) (hitAnything bool, result HitRecord) {
 	closestSoFar := interval.End
-	for _, object := range s.Objects {
-		if hit, rec := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}); hit {
+	for i := range s.Objects {
+		if hit, rec := s.Objects[i].Hit(r, Interval{Start: interval.Start, End: closestSoFar}); hit {
 			hitAnything = true
 			closestSoFar = rec.T
 			result = rec
@@ -111,12 +111,12 @@ func DefaultScene() *Scene {
 	right := Metal{Albedo: ColorF{Vec3{1, .8, .8}}, Fuzz: 0.05}
 	return &Scene{
 		// Default scene with two spheres.
-		Objects: []Hittable{
-			&Sphere{Center: Vec3{0, 0, -1.2}, Radius: 0.5, Mat: center},
-			&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100, Mat: ground},
-			&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.5, Mat: left},
-			&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.4, Mat: bubble},
-			&Sphere{Center: Vec3{1.0, 0, -1}, Radius: 0.5, Mat: right},
+		Objects: []Sphere{
+			Sphere{Center: Vec3{0, 0, -1.2}, Radius: 0.5, Mat: center},
+			Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100, Mat: ground},
+			Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.5, Mat: left},
+			Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.4, Mat: bubble},
+			Sphere{Center: Vec3{1.0, 0, -1}, Radius: 0.5, Mat: right},
 		},
 		Background: DefaultBackground(),
 	}
@@ -125,7 +125,7 @@ func DefaultScene() *Scene {
 func RichScene(rand Rand) *Scene {
 	ground := Lambertian{Albedo: ColorF{Vec3{0.5, 0.5, 0.5}}}
 	world := &Scene{}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{0, -1000, 0}, Radius: 1000, Mat: ground})
+	world.Objects = append(world.Objects, Sphere{Center: Vec3{0, -1000, 0}, Radius: 1000, Mat: ground})
 
 	for a := -11; a < 11; a++ {
 		for b := -11; b < 11; b++ {
@@ -139,30 +139,30 @@ func RichScene(rand Rand) *Scene {
 					// diffuse
 					albedo := RandomColor(rand).Mul(RandomColor(rand))
 					sphereMaterial = Lambertian{Albedo: albedo}
-					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
+					world.Objects = append(world.Objects, Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				case chooseMat < 0.95:
 					// metal
 					albedo := RandomColorInRange(rand, Interval{0.5, 1.0})
 					fuzz := rand.Float64() * 0.5
 					sphereMaterial = Metal{Albedo: albedo, Fuzz: fuzz}
-					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
+					world.Objects = append(world.Objects, Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				default:
 					// glass
 					sphereMaterial = Dielectric{RefIdx: 1.5}
-					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
+					world.Objects = append(world.Objects, Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				}
 			}
 		}
 	}
 
 	material1 := Dielectric{RefIdx: 1.5}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{0, 1, 0}, Radius: 1.0, Mat: material1})
+	world.Objects = append(world.Objects, Sphere{Center: Vec3{0, 1, 0}, Radius: 1.0, Mat: material1})
 
 	material2 := Lambertian{Albedo: ColorF{Vec3{0.4, 0.2, 0.1}}}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{-4, 1, 0}, Radius: 1.0, Mat: material2})
+	world.Objects = append(world.Objects, Sphere{Center: Vec3{-4, 1, 0}, Radius: 1.0, Mat: material2})
 
 	material3 := Metal{Albedo: ColorF{Vec3{0.7, 0.6, 0.5}}, Fuzz: 0.0}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{4, 1, 0}, Radius: 1.0, Mat: material3})
+	world.Objects = append(world.Objects, Sphere{Center: Vec3{4, 1, 0}, Radius: 1.0, Mat: material3})
 
 	return world
 }

@@ -30,14 +30,15 @@ type Scene struct {
 	Background AmbientLight
 }
 
-func (s *Scene) Hit(r *Ray, interval Interval, hr *HitRecord) bool {
+func (s *Scene) Hit(r *Ray, interval Interval, hr *HitRecord) (hitAnything bool) {
 	closestSoFar := interval.End
 	for _, object := range s.Objects {
 		if hit := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}, hr); hit {
+			hitAnything = true
 			closestSoFar = hr.T
 		}
 	}
-	return closestSoFar < interval.End
+	return hitAnything
 }
 
 // RayColor is the main function for computing the color of a ray (thus a pixel).

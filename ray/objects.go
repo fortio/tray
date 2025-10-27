@@ -2,12 +2,14 @@ package ray
 
 import "math"
 
+// HitRecord holds information about a ray-object intersection.
+// Note: it's too big to be returned by value efficiently.
 type HitRecord struct {
 	Point     Vec3
 	Normal    Vec3
 	T         float64
-	FrontFace bool
 	Mat       Material
+	FrontFace bool
 }
 
 func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
@@ -20,7 +22,7 @@ func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
 }
 
 type Hittable interface {
-	Hit(r *Ray, interval Interval) (bool, HitRecord)
+	Hit(r *Ray, interval Interval, hr *HitRecord) bool
 }
 
 type Scene struct {
@@ -28,16 +30,15 @@ type Scene struct {
 	Background AmbientLight
 }
 
-func (s *Scene) Hit(r *Ray, interval Interval) (hitAnything bool, result HitRecord) {
+func (s *Scene) Hit(r *Ray, interval Interval, hr *HitRecord) (hitAnything bool) {
 	closestSoFar := interval.End
 	for _, object := range s.Objects {
-		if hit, rec := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}); hit {
+		if hit := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}, hr); hit {
 			hitAnything = true
-			closestSoFar = rec.T
-			result = rec
+			closestSoFar = hr.T
 		}
 	}
-	return hitAnything, result
+	return hitAnything
 }
 
 // RayColor is the main function for computing the color of a ray (thus a pixel).
@@ -45,7 +46,8 @@ func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 	if depth <= 0 {
 		return ColorF{0, 0, 0}
 	}
-	if hit, hr := s.Hit(r, FrontEpsilon); hit {
+	hr := &HitRecord{}
+	if hit := s.Hit(r, FrontEpsilon, hr); hit {
 		if didScatter, attenuation, scattered := hr.Mat.Scatter(r, hr); didScatter {
 			return Mul(attenuation, s.RayColor(scattered, depth-1))
 		}
@@ -72,28 +74,29 @@ type Sphere struct {
 	Mat    Material
 }
 
-func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
+func (s *Sphere) Hit(r *Ray, i Interval, hr *HitRecord) bool {
 	oc := Sub(s.Center, r.Origin)
 	a := LengthSquared(r.Direction)
 	h := Dot(r.Direction, oc)
 	c := LengthSquared(oc) - s.Radius*s.Radius
 	discriminant := h*h - a*c
 	if discriminant < 0 {
-		return false, HitRecord{}
+		return false
 	}
 	sqrtD := math.Sqrt(discriminant)
 	root := (h - sqrtD) / a
 	if !i.Surrounds(root) {
 		root = (h + sqrtD) / a
 		if !i.Surrounds(root) {
-			return false, HitRecord{}
+			return false
 		}
 	}
-	hr := HitRecord{Point: r.At(root), T: root}
+	hr.Point = r.At(root)
+	hr.T = root
 	outwardNormal := SDiv(Sub(hr.Point, s.Center), s.Radius)
 	hr.SetFaceNormal(r, outwardNormal)
 	hr.Mat = s.Mat
-	return true, hr
+	return true
 }
 
 func DefaultBackground() AmbientLight {
@@ -137,12 +140,12 @@ func RichScene(rand Rand) *Scene {
 				switch {
 				case chooseMat < 0.8:
 					// diffuse
-					albedo := Mul(Random[ColorF](rand), Random[ColorF](rand))
+					albedo := Mul(Random(rand), Random(rand))
 					sphereMaterial = Lambertian{Albedo: albedo}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				case chooseMat < 0.95:
 					// metal
-					albedo := RandomInRange[ColorF](rand, Interval{0.5, 1.0})
+					albedo := RandomInRange(rand, Interval{0.5, 1.0})
 					fuzz := rand.Float64() * 0.5
 					sphereMaterial = Metal{Albedo: albedo, Fuzz: fuzz}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})

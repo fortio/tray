@@ -3,15 +3,15 @@ package ray
 import "math"
 
 type Material interface {
-	Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray)
+	Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray)
 }
 
 type Lambertian struct {
 	Albedo ColorF
 }
 
-func (l Lambertian) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
-	scatterDirection := Add(rec.Normal, RandomUnitVector[Vec3](rIn.Rand))
+func (l Lambertian) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
+	scatterDirection := Add(rec.Normal, RandomUnitVector(rIn.Rand))
 	// Catch degenerate scatter direction
 	if NearZero(scatterDirection) {
 		scatterDirection = rec.Normal
@@ -25,10 +25,10 @@ type Metal struct {
 	Fuzz   float64
 }
 
-func (m Metal) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
+func (m Metal) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
 	reflected := Reflect(Unit(rIn.Direction), rec.Normal)
 	if m.Fuzz > 0.0 {
-		reflected = Add(reflected, SMul(RandomUnitVector[Vec3](rIn.Rand), m.Fuzz))
+		reflected = Add(reflected, SMul(RandomUnitVector(rIn.Rand), m.Fuzz))
 	}
 	scattered := rIn.NewRay(rec.Point, reflected)
 	if Dot(scattered.Direction, rec.Normal) > 0 {
@@ -41,7 +41,7 @@ type Dielectric struct {
 	RefIdx float64
 }
 
-func (d Dielectric) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
+func (d Dielectric) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
 	attenuation := ColorF{1.0, 1.0, 1.0}
 	var refractionRatio float64
 	if rec.FrontFace {

@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+// Test helper to preserve the original return pattern (bool, *HitRecord).
+func testHit(h Hittable, r *Ray, i Interval) (bool, *HitRecord) {
+	rec := &HitRecord{}
+	hit := h.Hit(r, i, rec)
+	return hit, rec
+}
+
 func TestSetFaceNormalFrontFace(t *testing.T) {
 	rnd := RandForTests()
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
@@ -47,7 +54,7 @@ func TestSphereHitSimple(t *testing.T) {
 	}
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
-	hit, rec := sphere.Hit(ray, FrontEpsilon)
+	hit, rec := testHit(&sphere, ray, FrontEpsilon)
 
 	if !hit {
 		t.Fatal("Expected hit")
@@ -73,7 +80,7 @@ func TestSphereNoHitMiss(t *testing.T) {
 	// Ray that misses the sphere
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{2, 0, -1})
 
-	hit, _ := sphere.Hit(ray, FrontEpsilon)
+	hit, _ := testHit(&sphere, ray, FrontEpsilon)
 
 	if hit {
 		t.Error("Expected no hit")
@@ -90,7 +97,7 @@ func TestSphereHitNormal(t *testing.T) {
 	// Ray from positive X hitting sphere
 	ray := rnd.NewRay(Vec3{2, 0, 0}, Vec3{-1, 0, 0})
 
-	hit, rec := sphere.Hit(ray, FrontEpsilon)
+	hit, rec := testHit(&sphere, ray, FrontEpsilon)
 
 	if !hit {
 		t.Fatal("Expected hit")
@@ -115,7 +122,7 @@ func TestSphereHitFromInside(t *testing.T) {
 	// Ray from inside sphere going out
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{1, 0, 0})
 
-	hit, rec := sphere.Hit(ray, Front)
+	hit, rec := testHit(&sphere, ray, Front)
 
 	if !hit {
 		t.Fatal("Expected hit")
@@ -135,18 +142,18 @@ func TestSphereHitInterval(t *testing.T) {
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	// Hit with acceptable interval
-	hit, _ := sphere.Hit(ray, Interval{Start: 0, End: 10})
+	hit, _ := testHit(&sphere, ray, Interval{Start: 0, End: 10})
 	if !hit {
 		t.Error("Expected hit with interval [0, 10]")
 	}
 
 	// Miss with interval that excludes the hit
-	hit, _ = sphere.Hit(ray, Interval{Start: 0, End: 3})
+	hit, _ = testHit(&sphere, ray, Interval{Start: 0, End: 3})
 	if hit {
 		t.Error("Expected no hit with interval [0, 3]")
 	}
 
-	hit, _ = sphere.Hit(ray, Interval{Start: 10, End: 20})
+	hit, _ = testHit(&sphere, ray, Interval{Start: 10, End: 20})
 	if hit {
 		t.Error("Expected no hit with interval [10, 20]")
 	}
@@ -162,7 +169,7 @@ func TestSceneHitSingleObject(t *testing.T) {
 	scene := Scene{Objects: []Hittable{sphere}}
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
-	hit, rec := scene.Hit(ray, FrontEpsilon)
+	hit, rec := testHit(&scene, ray, FrontEpsilon)
 
 	if !hit {
 		t.Fatal("Expected hit")
@@ -187,7 +194,7 @@ func TestSceneHitMultipleObjects(t *testing.T) {
 	scene := Scene{Objects: []Hittable{sphere1, sphere2}}
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
-	hit, rec := scene.Hit(ray, FrontEpsilon)
+	hit, rec := testHit(&scene, ray, FrontEpsilon)
 
 	if !hit {
 		t.Fatal("Expected hit")
@@ -210,7 +217,7 @@ func TestSceneNoHit(t *testing.T) {
 	// Ray that misses all objects
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{10, 0, -1})
 
-	hit, _ := scene.Hit(ray, FrontEpsilon)
+	hit, _ := testHit(&scene, ray, FrontEpsilon)
 
 	if hit {
 		t.Error("Expected no hit")
@@ -226,7 +233,7 @@ func TestRayColorBackgroundGradient(t *testing.T) {
 	color := scene.RayColor(ray, 10)
 
 	// Should be more blue than white
-	if color[2] < color[0] {
+	if color.z < color.x {
 		t.Errorf("Expected blue component to be higher for downward ray, got %v", color)
 	}
 }
@@ -303,7 +310,7 @@ func TestRayColorWithDifferentMaterials(t *testing.T) {
 			color := scene.RayColor(ray, 5)
 
 			// All materials should produce valid colors (components in [0,1])
-			for i, c := range color {
+			for i, c := range color.Components() {
 				if c < 0 || c > 1 {
 					t.Errorf("color[%d] = %f, want in range [0,1]", i, c)
 				}
@@ -379,7 +386,7 @@ func TestRayColorMaterialAbsorption(t *testing.T) {
 	for range 100 {
 		color := scene.RayColor(ray, 5)
 		// Valid result is either absorbed (black) or scattered (some color in [0,1])
-		for i, c := range color {
+		for i, c := range color.Components() {
 			if c < 0 || c > 1 {
 				t.Fatalf("Invalid color[%d] = %f", i, c)
 			}

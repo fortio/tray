@@ -2,12 +2,14 @@ package ray
 
 import "math"
 
+// HitRecord holds information about a ray-object intersection.
+// Note: it's too big to be returned by value efficiently.
 type HitRecord struct {
 	Point     Vec3
 	Normal    Vec3
 	T         float64
-	FrontFace bool
 	Mat       Material
+	FrontFace bool
 }
 
 func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
@@ -20,7 +22,7 @@ func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
 }
 
 type Hittable interface {
-	Hit(r *Ray, interval Interval, result *HitRecord) bool
+	Hit(r *Ray, interval Interval, hr *HitRecord) bool
 }
 
 type Scene struct {
@@ -28,15 +30,14 @@ type Scene struct {
 	Background AmbientLight
 }
 
-func (s *Scene) Hit(r *Ray, interval Interval, result *HitRecord) (hitAnything bool) {
+func (s *Scene) Hit(r *Ray, interval Interval, hr *HitRecord) bool {
 	closestSoFar := interval.End
-	for i := range s.Objects {
-		if hit := s.Objects[i].Hit(r, Interval{Start: interval.Start, End: closestSoFar}, result); hit {
-			hitAnything = true
-			closestSoFar = result.T
+	for _, object := range s.Objects {
+		if hit := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}, hr); hit {
+			closestSoFar = hr.T
 		}
 	}
-	return hitAnything
+	return closestSoFar < interval.End
 }
 
 // RayColor is the main function for computing the color of a ray (thus a pixel).
@@ -44,8 +45,8 @@ func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 	if depth <= 0 {
 		return ColorF{0, 0, 0}
 	}
-	var hr HitRecord
-	if hit := s.Hit(r, FrontEpsilon, &hr); hit {
+	hr := &HitRecord{}
+	if hit := s.Hit(r, FrontEpsilon, hr); hit {
 		if didScatter, attenuation, scattered := hr.Mat.Scatter(r, hr); didScatter {
 			return Mul(attenuation, s.RayColor(scattered, depth-1))
 		}
@@ -72,11 +73,11 @@ type Sphere struct {
 	Mat    Material
 }
 
-func (s *Sphere) Hit(r *Ray, i Interval, result *HitRecord) bool {
-	oc := s.Center.Sub(r.Origin)
-	a := r.Direction.LengthSquared()
-	h := r.Direction.Dot(oc)
-	c := oc.LengthSquared() - s.Radius*s.Radius
+func (s *Sphere) Hit(r *Ray, i Interval, hr *HitRecord) bool {
+	oc := Sub(s.Center, r.Origin)
+	a := LengthSquared(r.Direction)
+	h := Dot(r.Direction, oc)
+	c := LengthSquared(oc) - s.Radius*s.Radius
 	discriminant := h*h - a*c
 	if discriminant < 0 {
 		return false
@@ -89,11 +90,11 @@ func (s *Sphere) Hit(r *Ray, i Interval, result *HitRecord) bool {
 			return false
 		}
 	}
-	result.Point = r.At(root)
-	result.T = root
-	outwardNormal := result.Point.Sub(s.Center).SDiv(s.Radius)
-	result.SetFaceNormal(r, outwardNormal)
-	result.Mat = s.Mat
+	hr.Point = r.At(root)
+	hr.T = root
+	outwardNormal := SDiv(Sub(hr.Point, s.Center), s.Radius)
+	hr.SetFaceNormal(r, outwardNormal)
+	hr.Mat = s.Mat
 	return true
 }
 

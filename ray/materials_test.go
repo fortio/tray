@@ -9,7 +9,7 @@ func TestLambertianScatter(t *testing.T) {
 	rnd := RandForTests()
 	lambertian := Lambertian{Albedo: ColorF{0.5, 0.5, 0.5}}
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
-	rec := HitRecord{
+	rec := &HitRecord{
 		Point:  Vec3{0, 0, -1},
 		Normal: Vec3{0, 0, 1},
 	}
@@ -34,7 +34,7 @@ func TestMetalScatter(t *testing.T) {
 	metal := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
 	rayDir := Unit(Vec3{1, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
-	rec := HitRecord{
+	rec := &HitRecord{
 		Point:  Vec3{1, 1, 0},
 		Normal: Vec3{0, 1, 0},
 	}
@@ -60,7 +60,7 @@ func TestMetalScatterWithFuzz(t *testing.T) {
 	metal := Metal{Albedo: ColorF{0.9, 0.9, 0.9}, Fuzz: 0.3}
 	rayDir := Unit(Vec3{1, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
-	rec := HitRecord{
+	rec := &HitRecord{
 		Point:  Vec3{1, 1, 0},
 		Normal: Vec3{0, 1, 0},
 	}
@@ -85,7 +85,7 @@ func TestMetalScatterAbsorbedWhenReflectionBelowSurface(t *testing.T) {
 	metal := Metal{Albedo: ColorF{0.7, 0.7, 0.7}, Fuzz: 1.5}
 	rayDir := Unit(Vec3{1, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
-	rec := HitRecord{
+	rec := &HitRecord{
 		Point:  Vec3{1, 1, 0},
 		Normal: Vec3{0, 1, 0},
 	}
@@ -115,7 +115,7 @@ func TestDielectricScatterFrontFace(t *testing.T) {
 	dielectric := Dielectric{RefIdx: 1.5}
 	rayDir := Unit(Vec3{0, -1, 0})
 	ray := rnd.NewRay(Vec3{0, 2, 0}, rayDir)
-	rec := HitRecord{
+	rec := &HitRecord{
 		Point:     Vec3{0, 0, 0},
 		Normal:    Vec3{0, 1, 0},
 		FrontFace: true,
@@ -143,7 +143,7 @@ func TestDielectricScatterBackFace(t *testing.T) {
 	dielectric := Dielectric{RefIdx: 1.5}
 	rayDir := Unit(Vec3{0, 1, 0})
 	ray := rnd.NewRay(Vec3{0, -2, 0}, rayDir)
-	rec := HitRecord{
+	rec := &HitRecord{
 		Point:     Vec3{0, 0, 0},
 		Normal:    Vec3{0, 1, 0},
 		FrontFace: false,
@@ -182,7 +182,7 @@ func TestDielectricScatterVariousAngles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ray := rnd.NewRay(Vec3{0, 0, 0}, Unit(tt.rayDir))
-			rec := HitRecord{
+			rec := &HitRecord{
 				Point:     Vec3{0, 1, 0},
 				Normal:    Vec3{0, 1, 0},
 				FrontFace: tt.frontFace,

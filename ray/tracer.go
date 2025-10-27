@@ -57,7 +57,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		t.FocusDistance = Length(Sub(t.Position, t.LookAt))
 	}
 	// Need some/any light to get rays that aren't all black:
-	if scene.Background == nil {
+	if scene.Background.ColorA == (ColorF{}) && scene.Background.ColorB == (ColorF{}) {
 		scene.Background = DefaultBackground()
 	}
 	// Other default values:

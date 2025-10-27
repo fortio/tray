@@ -3,7 +3,7 @@ package ray
 import "testing"
 
 func TestNewRay(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	origin := Vec3{1, 2, 3}
 	direction := Vec3{4, 5, 6}
 
@@ -18,7 +18,7 @@ func TestNewRay(t *testing.T) {
 }
 
 func TestRayAt(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	origin := Vec3{1, 0, 0}
 	direction := Vec3{0, 1, 0}
 	ray := rnd.NewRay(origin, direction)
@@ -43,7 +43,7 @@ func TestRayAt(t *testing.T) {
 }
 
 func TestRayAtGeneral(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	origin := Vec3{1, 2, 3}
 	direction := Vec3{2, 3, 4}
 	ray := rnd.NewRay(origin, direction)

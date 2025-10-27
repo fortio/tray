@@ -25,22 +25,19 @@ type Hittable interface {
 
 type Scene struct {
 	Objects    []Hittable
-	Background *AmbientLight
+	Background AmbientLight
 }
 
-func (s *Scene) Hit(r *Ray, interval Interval) (bool, HitRecord) {
-	hitAnything := false
+func (s *Scene) Hit(r *Ray, interval Interval) (hitAnything bool, result HitRecord) {
 	closestSoFar := interval.End
-	var tempRec HitRecord
-
 	for _, object := range s.Objects {
 		if hit, rec := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}); hit {
 			hitAnything = true
 			closestSoFar = rec.T
-			tempRec = rec
+			result = rec
 		}
 	}
-	return hitAnything, tempRec
+	return hitAnything, result
 }
 
 // RayColor is the main function for computing the color of a ray (thus a pixel).
@@ -49,19 +46,13 @@ func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 		return ColorF{0, 0, 0}
 	}
 	if hit, hr := s.Hit(r, FrontEpsilon); hit {
-		var scattered *Ray
-		var attenuation ColorF
-		if didScatter, att, scat := hr.Mat.Scatter(r, hr); didScatter {
-			attenuation = att
-			scattered = scat
+		if didScatter, attenuation, scattered := hr.Mat.Scatter(r, hr); didScatter {
 			return Mul(attenuation, s.RayColor(scattered, depth-1))
 		}
 		return ColorF{0, 0, 0}
 	}
-	if s.Background != nil {
-		return s.Background.Hit(r)
-	}
-	return ColorF{0, 0, 0}
+	// later we can allow not having a background (put back the nil check) but for now it's the only light source
+	return s.Background.Hit(r)
 }
 
 type AmbientLight struct {
@@ -105,10 +96,10 @@ func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
 	return true, hr
 }
 
-func DefaultBackground() *AmbientLight {
+func DefaultBackground() AmbientLight {
 	white := ColorF{1.0, 1.0, 1.0}
 	blue := ColorF{0.4, 0.65, 1.0}
-	return &AmbientLight{ColorA: white, ColorB: blue}
+	return AmbientLight{ColorA: white, ColorB: blue}
 }
 
 func DefaultScene() *Scene {

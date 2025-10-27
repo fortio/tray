@@ -11,14 +11,29 @@ type Rand struct {
 	rng *rand.Rand
 }
 
-func NewRandomSource() Rand {
-	//nolint:gosec // not crypto use.
-	return Rand{rng: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))}
+// NewRand generates a new (scene) Rand with the given seed. If seed is 0, a random seed is used.
+func NewRand(seed uint64) Rand {
+	return NewRandIdx(0, seed)
 }
 
-func NewRand(seed uint64) Rand {
-	//nolint:gosec // not crypto use.
-	return Rand{rng: rand.New(rand.NewPCG(0, seed))}
+// NewRandIdx creates a new Rand using the given index and seed.
+// idx can be used to create different Rand instances for different goroutines.
+// If seed is 0, a random seed is used and index is ignored.
+//
+//nolint:gosec // not crypto use.
+func NewRandIdx(idx int, seed uint64) Rand {
+	seed1 := uint64(idx)
+	seed2 := seed
+	if seed == 0 {
+		seed1 = rand.Uint64()
+		seed2 = rand.Uint64()
+	}
+	return newRandSeeds(seed1, seed2)
+}
+
+//nolint:gosec // not crypto use.
+func newRandSeeds(seed1, seed2 uint64) Rand {
+	return Rand{rng: rand.New(rand.NewPCG(seed1, seed2))}
 }
 
 func (r Rand) Float64() float64 {

@@ -39,7 +39,7 @@ func Main() int {
 	fCPUProfile := flag.String("profile-cpu", "", "Write CPU profile to file")
 	fSave := flag.String("save", "out.png", "Save the rendered image to the specified PNG file")
 	// We get 486 objects like the c++ version with seed 7
-	fSceneSeed := flag.Uint64("seed", 7, "Seed for the random scene generation (0 randomizes each time)")
+	fSeed := flag.Uint64("seed", 7, "Seed for the random generators (0 randomizes each time)")
 	// Matches https://github.com/RayTracing/raytracing.github.io/blob/release/src/InOneWeekend/main.cc#L66-L67
 	fWidth := flag.Int("width", 1200, "Image width in pixels")
 	fHeight := flag.Int("height", 675, "Image height in pixels")
@@ -58,22 +58,18 @@ func Main() int {
 		}
 		defer pprof.StopCPUProfile()
 	}
-	var rand ray.Rand
-	if *fSceneSeed != 0 {
-		rand = ray.NewRand(*fSceneSeed)
-	} else {
-		rand = ray.NewRandomSource()
-	}
+	rand := ray.NewRand(*fSeed)
 	scene := ray.RichScene(rand)
 	if *fWorkers <= 0 {
 		*fWorkers = runtime.GOMAXPROCS(0)
 	}
-	log.Infof("Rendering image %dx%d with %d rays/pixel, max depth %d, %d workers, scene seed %d: %d objects",
-		imgWidth, imgHeight, *fRays, *fMaxDepth, *fWorkers, *fSceneSeed, len(scene.Objects))
+	log.Infof("Rendering image %dx%d with %d rays/pixel, max depth %d, %d workers, seed %d: %d objects",
+		imgWidth, imgHeight, *fRays, *fMaxDepth, *fWorkers, *fSeed, len(scene.Objects))
 	rt := ray.New(imgWidth, imgHeight)
 	rt.MaxDepth = *fMaxDepth
 	rt.NumRaysPerPixel = *fRays
 	rt.NumWorkers = *fWorkers
+	rt.Seed = *fSeed
 	// Camera setup:
 	rt.Camera = ray.RichSceneCamera()
 	// Setup progress bar

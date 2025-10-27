@@ -27,6 +27,7 @@ type Tracer struct {
 	RayRadius       float64
 	NumWorkers      int // Number of parallel workers; defaults to GOMAXPROCS if <= 0
 	ProgressFunc    func(delta int)
+	Seed            uint64 // Seed for random number generators; 0 means randomized each time
 	width, height   int
 	imageData       *image.RGBA
 }
@@ -91,18 +92,18 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 			endY++
 		}
 		wg.Add(1)
-		go (func(yStart, yEnd int) {
-			t.RenderLines(yStart, yEnd, scene)
+		go (func(idx, yStart, yEnd int) {
+			t.RenderLines(idx, yStart, yEnd, scene)
 			wg.Done()
-		})(startY, endY)
+		})(i, startY, endY)
 		startY = endY
 	}
 	wg.Wait()
 	return t.imageData
 }
 
-func (t *Tracer) RenderLines(yStart, yEnd int, scene *Scene) {
-	rng := NewRandomSource()
+func (t *Tracer) RenderLines(idx, yStart, yEnd int, scene *Scene) {
+	rng := NewRandIdx(idx, t.Seed)
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
 	pix := t.imageData.Pix

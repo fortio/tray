@@ -6,7 +6,7 @@ import (
 )
 
 func TestSetFaceNormalFrontFace(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 	outwardNormal := Vec3{0, 0, 1}
 
@@ -22,7 +22,7 @@ func TestSetFaceNormalFrontFace(t *testing.T) {
 }
 
 func TestSetFaceNormalBackFace(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, 1})
 	outwardNormal := Vec3{0, 0, 1}
 
@@ -39,7 +39,7 @@ func TestSetFaceNormalBackFace(t *testing.T) {
 }
 
 func TestSphereHitSimple(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := Sphere{
 		Center: Vec3{0, 0, -1},
 		Radius: 0.5,
@@ -64,7 +64,7 @@ func TestSphereHitSimple(t *testing.T) {
 }
 
 func TestSphereNoHitMiss(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := Sphere{
 		Center: Vec3{0, 0, -1},
 		Radius: 0.5,
@@ -81,7 +81,7 @@ func TestSphereNoHitMiss(t *testing.T) {
 }
 
 func TestSphereHitNormal(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := Sphere{
 		Center: Vec3{0, 0, 0},
 		Radius: 1.0,
@@ -106,7 +106,7 @@ func TestSphereHitNormal(t *testing.T) {
 }
 
 func TestSphereHitFromInside(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := Sphere{
 		Center: Vec3{0, 0, 0},
 		Radius: 1.0,
@@ -126,7 +126,7 @@ func TestSphereHitFromInside(t *testing.T) {
 }
 
 func TestSphereHitInterval(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := Sphere{
 		Center: Vec3{0, 0, -5},
 		Radius: 1.0,
@@ -153,7 +153,7 @@ func TestSphereHitInterval(t *testing.T) {
 }
 
 func TestSceneHitSingleObject(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := &Sphere{
 		Center: Vec3{0, 0, -1},
 		Radius: 0.5,
@@ -173,7 +173,7 @@ func TestSceneHitSingleObject(t *testing.T) {
 }
 
 func TestSceneHitMultipleObjects(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere1 := &Sphere{
 		Center: Vec3{0, 0, -1},
 		Radius: 0.5,
@@ -200,7 +200,7 @@ func TestSceneHitMultipleObjects(t *testing.T) {
 }
 
 func TestSceneNoHit(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := &Sphere{
 		Center: Vec3{0, 0, -1},
 		Radius: 0.5,
@@ -218,7 +218,7 @@ func TestSceneNoHit(t *testing.T) {
 }
 
 func TestRayColorBackgroundGradient(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	scene := &Scene{Objects: []Hittable{}}
 	// Ray pointing straight down (should give more blue)
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, -1, 0})
@@ -232,7 +232,7 @@ func TestRayColorBackgroundGradient(t *testing.T) {
 }
 
 func TestRayColorDepthLimit(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := &Sphere{
 		Center: Vec3{0, 0, -1},
 		Radius: 0.5,
@@ -258,7 +258,7 @@ func TestRayColorDepthLimit(t *testing.T) {
 func TestRayColorDepthExhaustion(t *testing.T) {
 	// Test that when rays keep scattering and depth runs out, we get black
 	// A sphere with perfect reflection at very low depth should exhaust quickly
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 
 	// Create a scene where rays will keep bouncing
 	sphere := &Sphere{
@@ -280,7 +280,7 @@ func TestRayColorDepthExhaustion(t *testing.T) {
 }
 
 func TestRayColorWithDifferentMaterials(t *testing.T) {
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	tests := []struct {
 		name string
 		mat  Material
@@ -323,7 +323,7 @@ func TestDefaultScene(t *testing.T) {
 	}
 
 	// Test that default scene can be rendered
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
 	color := scene.RayColor(ray, 5)
 	_ = color // Just ensure it runs without panic
@@ -366,7 +366,7 @@ func TestDefaultSceneHasDifferentMaterials(t *testing.T) {
 func TestRayColorMaterialAbsorption(t *testing.T) {
 	// Test that when material doesn't scatter, RayColor returns black
 	// Metal with very high fuzz can absorb when fuzzed reflection goes below surface
-	rnd := NewRandomSource()
+	rnd := RandForTests()
 	sphere := &Sphere{
 		Center: Vec3{0, 0, -5},
 		Radius: 1.0,

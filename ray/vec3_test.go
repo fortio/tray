@@ -584,7 +584,7 @@ func TestRandomUnitVectorDistribution(t *testing.T) {
 			var sumX2, sumY2, sumZ2 float64
 			octantCounts := make([]int, 8)
 
-				for range samples {
+			for range samples {
 				v := tt.fn(r)
 				components := v.Components()
 				x, y, z := components[0], components[1], components[2]
@@ -996,4 +996,3 @@ func TestRefract(t *testing.T) {
 		})
 	}
 }
-

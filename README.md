@@ -13,7 +13,7 @@ Inspired by the [Ray Tracing In One Weekend](https://raytracing.github.io/books/
 Compared to the book:
 - This version is in Go (golang)
   - Code is (imo) a lot easier to read
-  - With generics to share code between colors and vectors/points yet different types
+  - ~~With generics to share code between colors and vectors/points yet different types~~ sadly go generics on [3]float64 has a huge negative performance impact. so... not anymore.
 - It uses goroutines to render faster (yeah go)
 - It can render to any ANSI terminal (truecolor support being better)
 - While also saving the full resolution as regular PNG (instead of PPM)

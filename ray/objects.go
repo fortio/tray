@@ -140,12 +140,12 @@ func RichScene(rand Rand) *Scene {
 				switch {
 				case chooseMat < 0.8:
 					// diffuse
-					albedo := Mul(Random[ColorF](rand), Random[ColorF](rand))
+					albedo := Mul(Random(rand), Random(rand))
 					sphereMaterial = Lambertian{Albedo: albedo}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				case chooseMat < 0.95:
 					// metal
-					albedo := RandomInRange[ColorF](rand, Interval{0.5, 1.0})
+					albedo := RandomInRange(rand, Interval{0.5, 1.0})
 					fuzz := rand.Float64() * 0.5
 					sphereMaterial = Metal{Albedo: albedo, Fuzz: fuzz}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})

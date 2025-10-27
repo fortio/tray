@@ -233,7 +233,7 @@ func TestRayColorBackgroundGradient(t *testing.T) {
 	color := scene.RayColor(ray, 10)
 
 	// Should be more blue than white
-	if color[2] < color[0] {
+	if color.z < color.x {
 		t.Errorf("Expected blue component to be higher for downward ray, got %v", color)
 	}
 }
@@ -310,7 +310,7 @@ func TestRayColorWithDifferentMaterials(t *testing.T) {
 			color := scene.RayColor(ray, 5)
 
 			// All materials should produce valid colors (components in [0,1])
-			for i, c := range color {
+			for i, c := range color.Components() {
 				if c < 0 || c > 1 {
 					t.Errorf("color[%d] = %f, want in range [0,1]", i, c)
 				}
@@ -386,7 +386,7 @@ func TestRayColorMaterialAbsorption(t *testing.T) {
 	for range 100 {
 		color := scene.RayColor(ray, 5)
 		// Valid result is either absorbed (black) or scattered (some color in [0,1])
-		for i, c := range color {
+		for i, c := range color.Components() {
 			if c < 0 || c > 1 {
 				t.Fatalf("Invalid color[%d] = %f", i, c)
 			}

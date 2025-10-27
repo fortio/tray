@@ -4,15 +4,15 @@ import "testing"
 
 // Non-generic versions for comparison.
 func AddDirect(u, v Vec3) Vec3 {
-	return Vec3{v[0] + u[0], v[1] + u[1], v[2] + u[2]}
+	return Vec3{v.x + u.x, v.y + u.y, v.z + u.z}
 }
 
 func (v Vec3) AddMethod(u Vec3) Vec3 {
-	return Vec3{v[0] + u[0], v[1] + u[1], v[2] + u[2]}
+	return Vec3{v.x + u.x, v.y + u.y, v.z + u.z}
 }
 
 func SMulDirect(v Vec3, t float64) Vec3 {
-	return Vec3{v[0] * t, v[1] * t, v[2] * t}
+	return Vec3{v.x * t, v.y * t, v.z * t}
 }
 
 // Benchmarks.

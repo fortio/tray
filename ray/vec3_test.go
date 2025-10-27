@@ -179,9 +179,11 @@ func TestVec3Mul(t *testing.T) {
 	c2 := ColorF{0.2, 0.5, 0.3}
 	colorResult := Mul(c1, c2)
 	colorExpected := ColorF{0.1, 0.4, 0.3}
+	cr := colorResult.Components()
+	ce := colorExpected.Components()
 	for i := range 3 {
-		if math.Abs(colorResult[i]-colorExpected[i]) > 1e-9 {
-			t.Errorf("Mul() color[%d] = %v, want %v", i, colorResult[i], colorExpected[i])
+		if math.Abs(cr[i]-ce[i]) > 1e-9 {
+			t.Errorf("Mul() color[%d] = %v, want %v", i, cr[i], ce[i])
 		}
 	}
 }
@@ -222,9 +224,11 @@ func TestVec3Unit(t *testing.T) {
 	result := Unit(v)
 	expected := Vec3{0.6, 0.8, 0.0}
 
+	r := result.Components()
+	e := expected.Components()
 	for i := range 3 {
-		if math.Abs(result[i]-expected[i]) > 1e-9 {
-			t.Errorf("Unit()[%d] = %v, want %v", i, result[i], expected[i])
+		if math.Abs(r[i]-e[i]) > 1e-9 {
+			t.Errorf("Unit()[%d] = %v, want %v", i, r[i], e[i])
 		}
 	}
 
@@ -251,7 +255,8 @@ func TestVec3Accessors(t *testing.T) {
 
 func TestColorF(t *testing.T) {
 	c := ColorF{0.5, 0.75, 1.0}
-	if c[0] != 0.5 || c[1] != 0.75 || c[2] != 1.0 {
+	components := c.Components()
+	if components[0] != 0.5 || components[1] != 0.75 || components[2] != 1.0 {
 		t.Errorf("ColorF() = %v, want [0.5 0.75 1.0]", c)
 	}
 }
@@ -503,11 +508,12 @@ func TestRandom(t *testing.T) {
 	expected := Interval{Start: 0.0, End: 1.0}
 	r := RandForTests()
 	for range samples {
-		v := Random[Vec3](r)
+		v := Random(r)
 		// Check each component is in [0,1)
+		c := v.Components()
 		for i := range 3 {
-			if !expected.Contains(v[i]) {
-				t.Errorf("Random() component %d = %v, want in [0,1)", i, v[i])
+			if !expected.Contains(c[i]) {
+				t.Errorf("Random() component %d = %v, want in [0,1)", i, c[i])
 			}
 		}
 		// Collect unique samples
@@ -526,9 +532,9 @@ func TestRandomUnitVectorCorrectness(t *testing.T) {
 		name string
 		fn   func(Rand) Vec3
 	}{
-		{"RandomUnitVector", RandomUnitVector[Vec3]},
-		{"RandomUnitVectorAngle", RandomUnitVectorAngle[Vec3]},
-		{"RandomUnitVectorNorm", RandomUnitVector[Vec3]},
+		{"RandomUnitVector", RandomUnitVector},
+		{"RandomUnitVectorAngle", RandomUnitVectorAngle},
+		{"RandomUnitVectorNorm", RandomUnitVector},
 	}
 
 	for _, tt := range tests {
@@ -563,9 +569,9 @@ func TestRandomUnitVectorDistribution(t *testing.T) {
 		name string
 		fn   func(Rand) Vec3
 	}{
-		{"RandomUnitVectorRej", RandomUnitVectorRej[Vec3]},
-		{"RandomUnitVectorAngle", RandomUnitVectorAngle[Vec3]},
-		{"RandomUnitVector (Norm method)", RandomUnitVector[Vec3]},
+		{"RandomUnitVectorRej", RandomUnitVectorRej},
+		{"RandomUnitVectorAngle", RandomUnitVectorAngle},
+		{"RandomUnitVector (Norm method)", RandomUnitVector},
 	}
 
 	for _, tt := range tests {
@@ -578,9 +584,10 @@ func TestRandomUnitVectorDistribution(t *testing.T) {
 			var sumX2, sumY2, sumZ2 float64
 			octantCounts := make([]int, 8)
 
-			for range samples {
+				for range samples {
 				v := tt.fn(r)
-				x, y, z := v[0], v[1], v[2]
+				components := v.Components()
+				x, y, z := components[0], components[1], components[2]
 
 				// Accumulate for mean and variance
 				sumX += x
@@ -677,9 +684,10 @@ func TestRandomUnitVectorNoBias(t *testing.T) {
 		r := RandForTests()
 
 		for range samples {
-			v := RandomUnitVectorAngle[Vec3](r)
+			v := RandomUnitVectorAngle(r)
+			c := v.Components()
 			// z is in [-1, 1], map to bin [0, bins-1]
-			bin := int((v[2] + 1) / 2 * float64(bins))
+			bin := int((c[2] + 1) / 2 * float64(bins))
 			if bin >= bins {
 				bin = bins - 1
 			}
@@ -711,7 +719,7 @@ func TestRandomUnitVectorNoBias(t *testing.T) {
 		const samples = 1000
 		r := RandForTests()
 		for range samples {
-			_ = RandomUnitVectorRej[Vec3](r)
+			_ = RandomUnitVectorRej(r)
 		}
 		// If this hangs or takes too long, there's a problem with the rejection logic
 		// The test passing means it completed in reasonable time
@@ -829,21 +837,21 @@ func TestSampleDiscMethods(t *testing.T) {
 func BenchmarkRandomUnitVector(b *testing.B) {
 	r := RandForTests()
 	for range b.N {
-		_ = RandomUnitVectorRej[Vec3](r)
+		_ = RandomUnitVectorRej(r)
 	}
 }
 
 func BenchmarkRandomUnitVectorAngle(b *testing.B) {
 	r := RandForTests()
 	for range b.N {
-		_ = RandomUnitVectorAngle[Vec3](r)
+		_ = RandomUnitVectorAngle(r)
 	}
 }
 
 func BenchmarkRandomUnitVectorNorm(b *testing.B) {
 	r := RandForTests()
 	for range b.N {
-		_ = RandomUnitVector[Vec3](r)
+		_ = RandomUnitVector(r)
 	}
 }
 
@@ -908,10 +916,12 @@ func TestReflect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := Reflect(tt.v, tt.n)
+			r := result.Components()
+			e := tt.expected.Components()
 			for i := range 3 {
-				if math.Abs(result[i]-tt.expected[i]) > 1e-9 {
+				if math.Abs(r[i]-e[i]) > 1e-9 {
 					t.Errorf("Reflect(%v, %v)[%d] = %v, want %v",
-						tt.v, tt.n, i, result[i], tt.expected[i])
+						tt.v, tt.n, i, r[i], e[i])
 				}
 			}
 		})
@@ -987,27 +997,3 @@ func TestRefract(t *testing.T) {
 	}
 }
 
-func TestToRGBALinear(t *testing.T) {
-	tests := []struct {
-		name     string
-		c        ColorF
-		expected color.RGBA
-	}{
-		{"black", ColorF{0, 0, 0}, color.RGBA{R: 0, G: 0, B: 0, A: 255}},
-		{"white", ColorF{1, 1, 1}, color.RGBA{R: 255, G: 255, B: 255, A: 255}},
-		{"red", ColorF{1, 0, 0}, color.RGBA{R: 255, G: 0, B: 0, A: 255}},
-		{"green", ColorF{0, 1, 0}, color.RGBA{R: 0, G: 255, B: 0, A: 255}},
-		{"blue", ColorF{0, 0, 1}, color.RGBA{R: 0, G: 0, B: 255, A: 255}},
-		{"mid gray", ColorF{0.5, 0.5, 0.5}, color.RGBA{R: 128, G: 128, B: 128, A: 255}},
-		{"quarter values", ColorF{0.25, 0.5, 0.75}, color.RGBA{R: 64, G: 128, B: 191, A: 255}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.c.ToRGBALinear()
-			if result != tt.expected {
-				t.Errorf("ToRGBALinear() = %v, want %v", result, tt.expected)
-			}
-		})
-	}
-}

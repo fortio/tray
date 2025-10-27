@@ -11,7 +11,7 @@ type Lambertian struct {
 }
 
 func (l Lambertian) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
-	scatterDirection := Add(rec.Normal, RandomUnitVector[Vec3](rIn.Rand))
+	scatterDirection := Add(rec.Normal, RandomUnitVector(rIn.Rand))
 	// Catch degenerate scatter direction
 	if NearZero(scatterDirection) {
 		scatterDirection = rec.Normal
@@ -28,7 +28,7 @@ type Metal struct {
 func (m Metal) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
 	reflected := Reflect(Unit(rIn.Direction), rec.Normal)
 	if m.Fuzz > 0.0 {
-		reflected = Add(reflected, SMul(RandomUnitVector[Vec3](rIn.Rand), m.Fuzz))
+		reflected = Add(reflected, SMul(RandomUnitVector(rIn.Rand), m.Fuzz))
 	}
 	scattered := rIn.NewRay(rec.Point, reflected)
 	if Dot(scattered.Direction, rec.Normal) > 0 {

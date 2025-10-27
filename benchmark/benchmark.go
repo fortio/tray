@@ -89,7 +89,7 @@ func Main() int {
 	if fname != "" {
 		err := SaveImage(img, fname)
 		if err != nil {
-			log.FErrf("could not save image to %q: %v", fname, err)
+			return log.FErrf("could not save image to %q: %v", fname, err)
 		}
 		log.Infof("Saved rendered image to %q", fname)
 	}

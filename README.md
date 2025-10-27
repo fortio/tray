@@ -10,11 +10,23 @@ Ray tracing in the terminal. Extending ansipixels.
 
 Inspired by the [Ray Tracing In One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) book.
 
+Compared to the book:
+- This version is in Go (golang)
+  - Code is (imo) a lot easier to read
+  - With generics to share code between colors and vectors/points yet different types
+- It uses goroutines to render faster (yeah go)
+- It can render to any ANSI terminal (truecolor support being better)
+- While also saving the full resolution as regular PNG (instead of PPM)
+- Lots of (generated, mostly) tests
+- You can specify a specific seed for the scene, for reproducible results
+- WIP: navigation in the world
 
 Current demo scene
 
 ![Example](example.png)
 
+(Created using `tray -save example.png -r 64 -s 8 -d 50 -seed 2 > /tmp/example.ansi` on a 160x45 terminal.
+It does take a while, 3 minutes on 11 core M3 pro)
 
 ## Install
 You can get the binary from [releases](https://github.com/fortio/tray/releases)

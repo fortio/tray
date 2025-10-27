@@ -16,6 +16,11 @@ func NewRandomSource() Rand {
 	return Rand{rng: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))}
 }
 
+func NewRand(seed uint64) Rand {
+	//nolint:gosec // not crypto use.
+	return Rand{rng: rand.New(rand.NewPCG(0, seed))}
+}
+
 func (r Rand) Float64() float64 {
 	return r.rng.Float64()
 }

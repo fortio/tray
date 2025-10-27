@@ -56,6 +56,7 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 	fExit := flag.Bool("exit", false,
 		"Not interactive (no raw), and exit immediately after rendering the image once (for timing purposes)")
 	fSave := flag.String("save", "", "Save the rendered image to the specified PNG file")
+	fSceneSeed := flag.Uint64("seed", 0, "Seed for the random scene generation (0 randomizes each time)")
 	cli.Main()
 	if *fCPUProfile != "" {
 		f, err := os.Create(*fCPUProfile)
@@ -95,6 +96,13 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 	var resized *image.RGBA
 	showSplash := normalRawMode
 	fname := *fSave
+	var rand ray.Rand
+	if *fSceneSeed != 0 {
+		rand = ray.NewRand(*fSceneSeed)
+	} else {
+		rand = ray.NewRandomSource()
+	}
+	scene := ray.RichScene(rand)
 	ap.OnResize = func() error {
 		ap.ClearScreen()
 		// render at supersampled resolution
@@ -103,6 +111,8 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 		rt.MaxDepth = *fMaxDepth
 		rt.NumRaysPerPixel = *fRays
 		rt.NumWorkers = *fWorkers
+		// Camera setup:
+		rt.Camera = ray.RichSceneCamera()
 		// Setup progress bar
 		pb := progressbar.NewBar()
 		pb.Prefix = "Rendering "
@@ -112,7 +122,7 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 		rt.ProgressFunc = func(n int) {
 			p.Update(n)
 		}
-		img := rt.Render(nil) // default scene
+		img := rt.Render(scene)
 		pb.End()
 		if fname != "" && (showSplash || exitAfterRender) {
 			// only save once, not after keypresses

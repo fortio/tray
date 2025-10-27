@@ -136,3 +136,15 @@ func (c *Camera) GetRay(rng Rand, pixelX, pixelY, offsetX, offsetY float64) *Ray
 
 	return rng.NewRay(rayOrigin, rayDirection)
 }
+
+func RichSceneCamera() Camera {
+	return Camera{
+		Position:      Vec3{13, 2, 3},
+		LookAt:        Vec3{0, 0, 0},
+		Up:            Vec3{0, 1, 0},
+		VerticalFoV:   20.0,
+		Aperture:      0.1,
+		FocalLength:   10.0,
+		FocusDistance: 10.0,
+	}
+}

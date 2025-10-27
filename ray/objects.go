@@ -20,7 +20,7 @@ func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
 }
 
 type Hittable interface {
-	Hit(r *Ray, interval Interval) (bool, HitRecord)
+	Hit(r *Ray, interval Interval, result *HitRecord) bool
 }
 
 type Scene struct {
@@ -28,16 +28,15 @@ type Scene struct {
 	Background AmbientLight
 }
 
-func (s *Scene) Hit(r *Ray, interval Interval) (hitAnything bool, result HitRecord) {
+func (s *Scene) Hit(r *Ray, interval Interval, result *HitRecord) (hitAnything bool) {
 	closestSoFar := interval.End
-	for _, object := range s.Objects {
-		if hit, rec := object.Hit(r, Interval{Start: interval.Start, End: closestSoFar}); hit {
+	for i := range s.Objects {
+		if hit := s.Objects[i].Hit(r, Interval{Start: interval.Start, End: closestSoFar}, result); hit {
 			hitAnything = true
-			closestSoFar = rec.T
-			result = rec
+			closestSoFar = result.T
 		}
 	}
-	return hitAnything, result
+	return hitAnything
 }
 
 // RayColor is the main function for computing the color of a ray (thus a pixel).
@@ -45,7 +44,8 @@ func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 	if depth <= 0 {
 		return ColorF{0, 0, 0}
 	}
-	if hit, hr := s.Hit(r, FrontEpsilon); hit {
+	var hr HitRecord
+	if hit := s.Hit(r, FrontEpsilon, &hr); hit {
 		if didScatter, attenuation, scattered := hr.Mat.Scatter(r, hr); didScatter {
 			return Mul(attenuation, s.RayColor(scattered, depth-1))
 		}
@@ -72,28 +72,29 @@ type Sphere struct {
 	Mat    Material
 }
 
-func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
-	oc := Sub(s.Center, r.Origin)
-	a := LengthSquared(r.Direction)
-	h := Dot(r.Direction, oc)
-	c := LengthSquared(oc) - s.Radius*s.Radius
+func (s *Sphere) Hit(r *Ray, i Interval, result *HitRecord) bool {
+	oc := s.Center.Sub(r.Origin)
+	a := r.Direction.LengthSquared()
+	h := r.Direction.Dot(oc)
+	c := oc.LengthSquared() - s.Radius*s.Radius
 	discriminant := h*h - a*c
 	if discriminant < 0 {
-		return false, HitRecord{}
+		return false
 	}
 	sqrtD := math.Sqrt(discriminant)
 	root := (h - sqrtD) / a
 	if !i.Surrounds(root) {
 		root = (h + sqrtD) / a
 		if !i.Surrounds(root) {
-			return false, HitRecord{}
+			return false
 		}
 	}
-	hr := HitRecord{Point: r.At(root), T: root}
-	outwardNormal := SDiv(Sub(hr.Point, s.Center), s.Radius)
-	hr.SetFaceNormal(r, outwardNormal)
-	hr.Mat = s.Mat
-	return true, hr
+	result.Point = r.At(root)
+	result.T = root
+	outwardNormal := result.Point.Sub(s.Center).SDiv(s.Radius)
+	result.SetFaceNormal(r, outwardNormal)
+	result.Mat = s.Mat
+	return true
 }
 
 func DefaultBackground() AmbientLight {

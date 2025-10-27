@@ -28,3 +28,6 @@ go.work.sum
 tray*
 .gr
 *.pprof
+benchmark/benchmark
+!example.png
+*.png

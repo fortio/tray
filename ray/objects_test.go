@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// Test helper to preserve the original return pattern (bool, *HitRecord)
+// Test helper to preserve the original return pattern (bool, *HitRecord).
 func testHit(h Hittable, r *Ray, i Interval) (bool, *HitRecord) {
 	rec := &HitRecord{}
 	hit := h.Hit(r, i, rec)

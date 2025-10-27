@@ -11,11 +11,11 @@ type HitRecord struct {
 }
 
 func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
-	hr.FrontFace = Dot(r.Direction, outwardNormal) < 0
+	hr.FrontFace = r.Direction.Dot(outwardNormal) < 0
 	if hr.FrontFace {
 		hr.Normal = outwardNormal
 	} else {
-		hr.Normal = Neg(outwardNormal)
+		hr.Normal = outwardNormal.Neg()
 	}
 }
 
@@ -43,13 +43,13 @@ func (s *Scene) Hit(r *Ray, interval Interval) (hitAnything bool, result HitReco
 // RayColor is the main function for computing the color of a ray (thus a pixel).
 func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 	if depth <= 0 {
-		return ColorF{0, 0, 0}
+		return ColorF{}
 	}
 	if hit, hr := s.Hit(r, FrontEpsilon); hit {
 		if didScatter, attenuation, scattered := hr.Mat.Scatter(r, hr); didScatter {
-			return Mul(attenuation, s.RayColor(scattered, depth-1))
+			return attenuation.Mul(s.RayColor(scattered, depth-1))
 		}
-		return ColorF{0, 0, 0}
+		return ColorF{}
 	}
 	// later we can allow not having a background (put back the nil check) but for now it's the only light source
 	return s.Background.Hit(r)
@@ -60,9 +60,9 @@ type AmbientLight struct {
 }
 
 func (al AmbientLight) Hit(r *Ray) ColorF {
-	unit := Unit(r.Direction)
+	unit := r.Direction.Unit()
 	a := 0.5 * (unit.Y() + 1.0)
-	blend := Add(SMul(al.ColorA, 1.0-a), SMul(al.ColorB, a))
+	blend := al.ColorA.SMul(1.0 - a).Add(al.ColorB.SMul(a))
 	return blend
 }
 
@@ -73,10 +73,10 @@ type Sphere struct {
 }
 
 func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
-	oc := Sub(s.Center, r.Origin)
-	a := LengthSquared(r.Direction)
-	h := Dot(r.Direction, oc)
-	c := LengthSquared(oc) - s.Radius*s.Radius
+	oc := s.Center.Sub(r.Origin)
+	a := r.Direction.LengthSquared()
+	h := r.Direction.Dot(oc)
+	c := oc.LengthSquared() - s.Radius*s.Radius
 	discriminant := h*h - a*c
 	if discriminant < 0 {
 		return false, HitRecord{}
@@ -90,25 +90,25 @@ func (s *Sphere) Hit(r *Ray, i Interval) (bool, HitRecord) {
 		}
 	}
 	hr := HitRecord{Point: r.At(root), T: root}
-	outwardNormal := SDiv(Sub(hr.Point, s.Center), s.Radius)
+	outwardNormal := hr.Point.Sub(s.Center).SDiv(s.Radius)
 	hr.SetFaceNormal(r, outwardNormal)
 	hr.Mat = s.Mat
 	return true, hr
 }
 
 func DefaultBackground() AmbientLight {
-	white := ColorF{1.0, 1.0, 1.0}
-	blue := ColorF{0.4, 0.65, 1.0}
+	white := ColorF{Vec3{1.0, 1.0, 1.0}}
+	blue := ColorF{Vec3{0.4, 0.65, 1.0}}
 	return AmbientLight{ColorA: white, ColorB: blue}
 }
 
 func DefaultScene() *Scene {
-	ground := Lambertian{Albedo: ColorF{0.7, 0.8, 0.1}}
-	center := Lambertian{Albedo: ColorF{0.1, 0.2, 0.5}}
+	ground := Lambertian{Albedo: ColorF{Vec3{0.7, 0.8, 0.1}}}
+	center := Lambertian{Albedo: ColorF{Vec3{0.1, 0.2, 0.5}}}
 	//		left := Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 0}
 	left := Dielectric{1.5}
 	bubble := Dielectric{1.0 / 1.5}
-	right := Metal{Albedo: ColorF{1, .8, .8}, Fuzz: 0.05}
+	right := Metal{Albedo: ColorF{Vec3{1, .8, .8}}, Fuzz: 0.05}
 	return &Scene{
 		// Default scene with two spheres.
 		Objects: []Hittable{
@@ -123,7 +123,7 @@ func DefaultScene() *Scene {
 }
 
 func RichScene(rand Rand) *Scene {
-	ground := Lambertian{Albedo: ColorF{0.5, 0.5, 0.5}}
+	ground := Lambertian{Albedo: ColorF{Vec3{0.5, 0.5, 0.5}}}
 	world := &Scene{}
 	world.Objects = append(world.Objects, &Sphere{Center: Vec3{0, -1000, 0}, Radius: 1000, Mat: ground})
 
@@ -132,17 +132,17 @@ func RichScene(rand Rand) *Scene {
 			chooseMat := rand.Float64()
 			center := Vec3{float64(a) + 0.9*rand.Float64(), 0.2, float64(b) + 0.9*rand.Float64()}
 
-			if Length(center.Minus(XYZ(4, 0.2, 0))) > 0.9 {
+			if center.Minus(XYZ(4, 0.2, 0)).Length() > 0.9 {
 				var sphereMaterial Material
 				switch {
 				case chooseMat < 0.8:
 					// diffuse
-					albedo := Mul(Random[ColorF](rand), Random[ColorF](rand))
+					albedo := RandomColor(rand).Mul(RandomColor(rand))
 					sphereMaterial = Lambertian{Albedo: albedo}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				case chooseMat < 0.95:
 					// metal
-					albedo := RandomInRange[ColorF](rand, Interval{0.5, 1.0})
+					albedo := RandomColorInRange(rand, Interval{0.5, 1.0})
 					fuzz := rand.Float64() * 0.5
 					sphereMaterial = Metal{Albedo: albedo, Fuzz: fuzz}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
@@ -158,10 +158,10 @@ func RichScene(rand Rand) *Scene {
 	material1 := Dielectric{RefIdx: 1.5}
 	world.Objects = append(world.Objects, &Sphere{Center: Vec3{0, 1, 0}, Radius: 1.0, Mat: material1})
 
-	material2 := Lambertian{Albedo: ColorF{0.4, 0.2, 0.1}}
+	material2 := Lambertian{Albedo: ColorF{Vec3{0.4, 0.2, 0.1}}}
 	world.Objects = append(world.Objects, &Sphere{Center: Vec3{-4, 1, 0}, Radius: 1.0, Mat: material2})
 
-	material3 := Metal{Albedo: ColorF{0.7, 0.6, 0.5}, Fuzz: 0.0}
+	material3 := Metal{Albedo: ColorF{Vec3{0.7, 0.6, 0.5}}, Fuzz: 0.0}
 	world.Objects = append(world.Objects, &Sphere{Center: Vec3{4, 1, 0}, Radius: 1.0, Mat: material3})
 
 	return world

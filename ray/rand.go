@@ -26,34 +26,40 @@ func (r Rand) Float64() float64 {
 }
 
 // Random generates a random vector with each component in [0,1).
-func Random[T ~[3]float64](r Rand) T {
-	return T{r.rng.Float64(), r.rng.Float64(), r.rng.Float64()}
+func RandomVec3(r Rand) Vec3 {
+	return Vec3{r.rng.Float64(), r.rng.Float64(), r.rng.Float64()}
+}
+func RandomColor(r Rand) ColorF {
+	return ColorF{RandomVec3(r)}
 }
 
 // RandomInRange generates a random vector with each component in the Interval
 // excluding the end.
 //
 
-func RandomInRange[T ~[3]float64](r Rand, intv Interval) T {
+func RandomInRange(r Rand, intv Interval) Vec3 {
 	minV := intv.Start
 	l := intv.Length()
-	return T{
+	return Vec3{
 		minV + l*r.rng.Float64(),
 		minV + l*r.rng.Float64(),
 		minV + l*r.rng.Float64(),
 	}
+}
+func RandomColorInRange(r Rand, intv Interval) ColorF {
+	return ColorF{RandomInRange(r, intv)}
 }
 
 // RandomUnitVectorRej generates a random unit vector using rejection sampling.
 // It repeatedly samples random vectors in the cube [-1,1)^3 until one is
 // found inside the unit sphere, then normalizes it to length 1.
 // This is the slowest of the three methods provided here.
-func RandomUnitVectorRej[T ~[3]float64](r Rand) T {
+func RandomUnitVectorRej(r Rand) Vec3 {
 	for {
-		r := RandomInRange[T](r, Interval{Start: -1, End: 1})
-		lensq := LengthSquared(r)
+		r := RandomInRange(r, Interval{Start: -1, End: 1})
+		lensq := r.LengthSquared()
 		if lensq > 1e-48 && lensq <= 1 {
-			return SDiv(r, math.Sqrt(lensq))
+			return r.SDiv(math.Sqrt(lensq))
 		}
 	}
 }
@@ -78,23 +84,23 @@ func RandomUnitVectorAngle[T ~[3]float64](r Rand) T {
 // the default name.
 //
 
-func RandomUnitVector[T ~[3]float64](r Rand) T {
+func RandomUnitVector(r Rand) Vec3 {
 	for {
 		x, y, z := r.rng.NormFloat64(), r.rng.NormFloat64(), r.rng.NormFloat64()
 		radius := math.Sqrt(x*x + y*y + z*z)
 		if radius > 1e-24 {
-			return T{x / radius, y / radius, z / radius}
+			return Vec3{x / radius, y / radius, z / radius}
 		}
 	}
 }
 
 // RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.
-func RandomOnHemisphere[T ~[3]float64](r Rand, normal T) T {
-	onUnitSphere := RandomUnitVector[T](r)
-	if Dot(onUnitSphere, normal) > 0.0 { // In the same hemisphere as the normal
+func RandomOnHemisphere(r Rand, normal Vec3) Vec3 {
+	onUnitSphere := RandomUnitVector(r)
+	if onUnitSphere.Dot(normal) > 0.0 { // In the same hemisphere as the normal
 		return onUnitSphere
 	}
-	return Neg(onUnitSphere)
+	return onUnitSphere.Neg()
 }
 
 // SampleDisc returns a random point (x,y) within a disc of radius r

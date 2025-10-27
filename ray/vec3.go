@@ -9,36 +9,61 @@ import (
 
 // Vec3 represents a 3D vector.
 // Many of the functions are implemented via generics and thus not methods.
-type Vec3 [3]float64
+type Vec3 struct {
+	x, y, z float64
+}
 
 // ColorF is a RGB color with float components.
-type ColorF [3]float64
+type ColorF struct{ v Vec3 }
 
 // Methods for both Vec3 and ColorF
 
-// Add: vector addition. returns u + v.
-func Add[T ~[3]float64](u, v T) T {
-	return T{v[0] + u[0], v[1] + u[1], v[2] + u[2]}
-}
-
-// Sub: vector subtraction, returns u - v.
-func Sub[T ~[3]float64](u, v T) T {
-	return T{u[0] - v[0], u[1] - v[1], u[2] - v[2]}
-}
-
-// AddMultiple: sums all the input vectors.
-func AddMultiple[T ~[3]float64](u T, vs ...T) T {
-	for _, v := range vs {
-		u = Add(u, v)
+func (v Vec3) Add(w Vec3) Vec3 {
+	return Vec3{
+		v.x + w.x,
+		v.y + w.y,
+		v.z + w.z,
 	}
-	return u
+}
+func (c ColorF) Add(d ColorF) ColorF {
+	return ColorF{c.v.Add(d.v)}
 }
 
-// SubMultiple: subtracts all the other input vectors from u.
-// returns u - v0 - v1 - ...
-func SubMultiple[T ~[3]float64](u T, v0 T, vs ...T) T {
-	toSub := AddMultiple(v0, vs...)
-	return Sub(u, toSub)
+func (v Vec3) Sub(w Vec3) Vec3 {
+	return Vec3{
+		v.x - w.x,
+		v.y - w.y,
+		v.z - w.z,
+	}
+}
+func (c ColorF) Sub(d ColorF) ColorF {
+	return ColorF{c.v.Sub(d.v)}
+}
+
+func (v Vec3) AddMultiple(vs ...Vec3) Vec3 {
+	for _, w := range vs {
+		v = v.Add(w)
+	}
+	return v
+}
+func (v ColorF) AddMultiple(vs ...ColorF) ColorF {
+	for _, w := range vs {
+		v = v.Add(w)
+	}
+	return v
+}
+
+func (v Vec3) SubMultiple(vs ...Vec3) Vec3 {
+	for _, w := range vs {
+		v = v.Sub(w)
+	}
+	return v
+}
+func (v ColorF) SubMultiple(vs ...ColorF) ColorF {
+	for _, w := range vs {
+		v = v.Sub(w)
+	}
+	return v
 }
 
 // Minus subtracts one or more vectors from v.
@@ -46,12 +71,17 @@ func SubMultiple[T ~[3]float64](u T, v0 T, vs ...T) T {
 // This is a convenience method wrapper around SubMultiple.
 // Example: camera.Minus(offset1, offset2, offset3).
 func (v Vec3) Minus(u0 Vec3, more ...Vec3) Vec3 {
-	return SubMultiple(v, u0, more...)
+	return v.Sub(u0).SubMultiple(more...)
+}
+func (v ColorF) Minus(u0 ColorF, more ...ColorF) ColorF {
+	return v.Sub(u0).SubMultiple(more...)
 }
 
-// Dot: dot product of two vectors.
-func Dot[T ~[3]float64](u, v T) float64 {
-	return u[0]*v[0] + u[1]*v[1] + u[2]*v[2]
+func (v Vec3) Dot(w Vec3) float64 {
+	return v.x*w.x + v.y*w.y + v.z*w.z
+}
+func (c ColorF) Dot(w ColorF) float64 {
+	return c.v.Dot(w.v)
 }
 
 // Cross computes the cross product of two vectors.
@@ -62,8 +92,15 @@ func Dot[T ~[3]float64](u, v T) float64 {
 //   - Finding perpendicular vectors (e.g., camera right = up × forward)
 //   - Computing surface normals from two edge vectors
 //   - Determining rotation axis between two vectors
-func Cross[T ~[3]float64](u, v T) T {
-	return T{u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]}
+func (v Vec3) Cross(w Vec3) Vec3 {
+	return Vec3{
+		v.y*w.z - v.z*w.y,
+		v.z*w.x - v.x*w.z,
+		v.x*w.y - v.y*w.x,
+	}
+}
+func (c ColorF) Cross(d ColorF) ColorF {
+	return ColorF{c.v.Cross(d.v)}
 }
 
 // Plus adds one or more vectors to v.
@@ -71,7 +108,10 @@ func Cross[T ~[3]float64](u, v T) T {
 // This is a convenience method wrapper around AddMultiple.
 // Example: position.Plus(velocity, acceleration).
 func (v Vec3) Plus(others ...Vec3) Vec3 {
-	return AddMultiple(v, others...)
+	return v.AddMultiple(others...)
+}
+func (c ColorF) Plus(others ...ColorF) ColorF {
+	return c.AddMultiple(others...)
 }
 
 // Times multiplies vector v by scalar t.
@@ -79,79 +119,125 @@ func (v Vec3) Plus(others ...Vec3) Vec3 {
 // This is a convenience method wrapper around SMul.
 // Example: direction.Times(distance).
 func (v Vec3) Times(t float64) Vec3 {
-	return SMul(v, t)
+	return v.SMul(t)
+}
+func (c ColorF) Times(t float64) ColorF {
+	return ColorF{c.v.Times(t)}
 }
 
-// SMul: multiply by scalar.
-func SMul[T ~[3]float64](v T, t float64) T {
-	return T{v[0] * t, v[1] * t, v[2] * t}
+func (c Vec3) SMul(t float64) Vec3 {
+	return Vec3{
+		c.x * t,
+		c.y * t,
+		c.z * t,
+	}
+}
+func (c ColorF) SMul(t float64) ColorF {
+	return ColorF{c.v.SMul(t)}
 }
 
-// Mul: component-wise multiplication. returns u * v.
-func Mul[T ~[3]float64](u, v T) T {
-	return T{u[0] * v[0], u[1] * v[1], u[2] * v[2]}
+func (v Vec3) Mul(w Vec3) Vec3 {
+	return Vec3{
+		v.x * w.x,
+		v.y * w.y,
+		v.z * w.z,
+	}
+}
+func (c ColorF) Mul(d ColorF) ColorF {
+	return ColorF{c.v.Mul(d.v)}
 }
 
-// SDiv: divide by scalar.
-func SDiv[T ~[3]float64](v T, t float64) T {
-	return T{v[0] / t, v[1] / t, v[2] / t}
+func (v Vec3) SDiv(t float64) Vec3 {
+	return Vec3{
+		v.x / t,
+		v.y / t,
+		v.z / t,
+	}
+}
+func (c ColorF) SDiv(t float64) ColorF {
+	return ColorF{c.v.SDiv(t)}
 }
 
-// Length: returns the length of the vector.
-func Length[T ~[3]float64](v T) float64 {
-	return math.Sqrt(LengthSquared(v))
+func (v Vec3) Length() float64 {
+	return math.Sqrt(v.LengthSquared())
+}
+func (c ColorF) Length() float64 {
+	return c.v.Length()
 }
 
-// LengthSquared: returns the squared length of the vector.
-func LengthSquared[T ~[3]float64](v T) float64 {
-	return v[0]*v[0] + v[1]*v[1] + v[2]*v[2]
+func (v Vec3) LengthSquared() float64 {
+	return v.x*v.x + v.y*v.y + v.z*v.z
+}
+func (c ColorF) LengthSquared() float64 {
+	return c.v.LengthSquared()
 }
 
-// Unit: returns the unit vector in the direction of v
-// (normalized to length 1).
-func Unit[T ~[3]float64](v T) T {
-	l := Length(v)
-	return T{v[0] / l, v[1] / l, v[2] / l}
+func (v Vec3) Unit() Vec3 {
+	l := v.Length()
+	return v.SDiv(l)
+}
+func (c ColorF) Unit() ColorF {
+	return ColorF{c.v.Unit()}
 }
 
-// Neg: returns the negation of the vector.
-func Neg[T ~[3]float64](v T) T {
-	return T{-v[0], -v[1], -v[2]}
+func (v Vec3) Neg() Vec3 {
+	return Vec3{
+		-v.x,
+		-v.y,
+		-v.z,
+	}
+}
+func (c ColorF) Neg() ColorF {
+	return ColorF{c.v.Neg()}
 }
 
-// NearZero returns true if the vector is close to zero in all dimensions.
-func NearZero[T ~[3]float64](v T) bool {
+func (v Vec3) NearZero() bool {
 	s := 1e-8
-	return (math.Abs(v[0]) < s) && (math.Abs(v[1]) < s) && (math.Abs(v[2]) < s)
+	return (math.Abs(v.x) < s) && (math.Abs(v.y) < s) && (math.Abs(v.z) < s)
+}
+func (c ColorF) NearZero() bool {
+	return c.v.NearZero()
 }
 
-// Reflect returns the reflection of vector v around normal n.
-func Reflect[T ~[3]float64](v, n T) T {
-	return Sub(v, SMul(n, 2*Dot(v, n)))
+func (v Vec3) Reflect(n Vec3) Vec3 {
+	return v.Sub(n.SMul(2 * v.Dot(n)))
+}
+func (c ColorF) Reflect(n ColorF) ColorF {
+	return ColorF{c.v.Reflect(n.v)}
 }
 
-// Refract computes the refraction of vector uv through normal n
-// with the given ratio of indices of refraction etaiOverEtat.
-func Refract[T ~[3]float64](uv, n T, etaiOverEtat float64) T {
-	cosTheta := math.Min(Dot(Neg(uv), n), 1.0)
-	rOutPerp := SMul(Add(uv, SMul(n, cosTheta)), etaiOverEtat)
-	rOutParallel := SMul(n, -math.Sqrt(math.Abs(1.0-LengthSquared(rOutPerp))))
-	return Add(rOutPerp, rOutParallel)
+func (v Vec3) Refract(n Vec3, etaiOverEtat float64) Vec3 {
+	cosTheta := math.Min(v.Neg().Dot(n), 1.0)
+	rOutPerp := v.Plus(n.Times(cosTheta)).Times(etaiOverEtat)
+	rOutParallel := n.Times(-math.Sqrt(math.Abs(1.0 - rOutPerp.LengthSquared())))
+	return rOutPerp.Plus(rOutParallel)
+}
+func (c ColorF) Refract(n ColorF, etaiOverEtat float64) ColorF {
+	return ColorF{c.v.Refract(n.v, etaiOverEtat)}
 }
 
 // X: returns the X component.
 func (v Vec3) X() float64 {
-	return v[0]
+	return v.x
+}
+func (c ColorF) R() float64 {
+	return c.v.x
 }
 
 // Y: returns the Y component.
 func (v Vec3) Y() float64 {
-	return v[1]
+	return v.y
+}
+func (c ColorF) G() float64 {
+	return c.v.y
 }
 
 // Z: returns the Z component.
 func (v Vec3) Z() float64 {
-	return v[2]
+	return v.z
+}
+func (c ColorF) B() float64 {
+	return c.v.z
 }
 
 // XYZ: creates a Vec3 from its components.
@@ -162,9 +248,9 @@ func XYZ(x, y, z float64) Vec3 {
 // ToSRGBA converts a linear ColorF to sRGB color.RGBA, clamping values to [0,1].
 func (c ColorF) ToSRGBA() color.RGBA {
 	return color.RGBA{
-		R: tcolor.LinearToSrgb(c[0]),
-		G: tcolor.LinearToSrgb(c[1]),
-		B: tcolor.LinearToSrgb(c[2]),
+		R: tcolor.LinearToSrgb(c.R()),
+		G: tcolor.LinearToSrgb(c.G()),
+		B: tcolor.LinearToSrgb(c.B()),
 		A: 255,
 	}
 }
@@ -172,9 +258,9 @@ func (c ColorF) ToSRGBA() color.RGBA {
 // ToRGBALinear converts a linear ColorF to linear color.RGBA, values must be in [0,1].
 func (c ColorF) ToRGBALinear() color.RGBA {
 	return color.RGBA{
-		R: uint8(math.Round(255. * float64(c[0]))),
-		G: uint8(math.Round(255. * float64(c[1]))),
-		B: uint8(math.Round(255. * float64(c[2]))),
+		R: uint8(math.Round(255. * float64(c.R()))),
+		G: uint8(math.Round(255. * float64(c.G()))),
+		B: uint8(math.Round(255. * float64(c.B()))),
 		A: 255,
 	}
 }

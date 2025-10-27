@@ -11,9 +11,9 @@ type Lambertian struct {
 }
 
 func (l Lambertian) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
-	scatterDirection := Add(rec.Normal, RandomUnitVector[Vec3](rIn.Rand))
+	scatterDirection := rec.Normal.Add(RandomUnitVector(rIn.Rand))
 	// Catch degenerate scatter direction
-	if NearZero(scatterDirection) {
+	if scatterDirection.NearZero() {
 		scatterDirection = rec.Normal
 	}
 	scattered := rIn.NewRay(rec.Point, scatterDirection)
@@ -26,12 +26,12 @@ type Metal struct {
 }
 
 func (m Metal) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
-	reflected := Reflect(Unit(rIn.Direction), rec.Normal)
+	reflected := rIn.Direction.Unit().Reflect(rec.Normal)
 	if m.Fuzz > 0.0 {
-		reflected = Add(reflected, SMul(RandomUnitVector[Vec3](rIn.Rand), m.Fuzz))
+		reflected = reflected.Add(RandomUnitVector(rIn.Rand).SMul(m.Fuzz))
 	}
 	scattered := rIn.NewRay(rec.Point, reflected)
-	if Dot(scattered.Direction, rec.Normal) > 0 {
+	if scattered.Direction.Dot(rec.Normal) > 0 {
 		return true, m.Albedo, scattered
 	}
 	return false, ColorF{}, nil
@@ -42,22 +42,22 @@ type Dielectric struct {
 }
 
 func (d Dielectric) Scatter(rIn *Ray, rec HitRecord) (bool, ColorF, *Ray) {
-	attenuation := ColorF{1.0, 1.0, 1.0}
+	attenuation := ColorF{Vec3{1.0, 1.0, 1.0}}
 	var refractionRatio float64
 	if rec.FrontFace {
 		refractionRatio = 1.0 / d.RefIdx
 	} else {
 		refractionRatio = d.RefIdx
 	}
-	unitDirection := Unit(rIn.Direction)
-	cosTheta := math.Min(Dot(Neg(unitDirection), rec.Normal), 1.0)
+	unitDirection := rIn.Direction.Unit()
+	cosTheta := math.Min(unitDirection.Neg().Dot(rec.Normal), 1.0)
 	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
 	cannotRefract := (refractionRatio*sinTheta > 1.0)
 	var direction Vec3
 	if cannotRefract || Reflectance(cosTheta, refractionRatio) > rIn.Float64() {
-		direction = Reflect(unitDirection, rec.Normal)
+		direction = unitDirection.Reflect(rec.Normal)
 	} else {
-		direction = Refract(unitDirection, rec.Normal, refractionRatio)
+		direction = unitDirection.Refract(rec.Normal, refractionRatio)
 	}
 	scattered := rIn.NewRay(rec.Point, direction)
 	return true, attenuation, scattered

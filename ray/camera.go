@@ -59,8 +59,8 @@ func (c *Camera) Initialize(width, height int) {
 	// Aperture default is 0 (pinhole) which is already the zero value
 
 	// Validate that Position and LookAt are different
-	viewDirection := Sub(c.Position, c.LookAt)
-	if NearZero(viewDirection) {
+	viewDirection := c.Position.Sub(c.LookAt)
+	if viewDirection.NearZero() {
 		// Position == LookAt, can't determine view direction.
 		// Default to looking down -Z axis (w points toward +Z).
 		viewDirection = Vec3{0, 0, 1}
@@ -72,15 +72,15 @@ func (c *Camera) Initialize(width, height int) {
 	// u: points to the right (Up × w, perpendicular to both)
 	// v: points up in camera space (w × u, perpendicular to both, adjusted by Up)
 	// Note: Changing Up rotates the camera around the view axis (roll).
-	w := Unit(viewDirection)
-	u := Unit(Cross(c.Up, w))
-	v := Cross(w, u)
+	w := viewDirection.Unit()
+	u := c.Up.Cross(w).Unit()
+	v := w.Cross(u)
 
 	// Compute defocus disk basis vectors for depth of field
 	// The disk radius is aperture/2, and these vectors define the disk's orientation
 	defocusRadius := c.Aperture / 2
-	c.defocusDiskU = SMul(u, defocusRadius)
-	c.defocusDiskV = SMul(v, defocusRadius)
+	c.defocusDiskU = u.SMul(defocusRadius)
+	c.defocusDiskV = v.SMul(defocusRadius)
 
 	// Compute viewport dimensions from field of view
 	// tan(fov/2) = (viewportHeight/2) / focalLength
@@ -91,13 +91,13 @@ func (c *Camera) Initialize(width, height int) {
 	viewportWidth := aspectRatio * viewportHeight
 
 	// Viewport edges in world coordinates
-	horizontal := SMul(u, viewportWidth)
-	vertical := SMul(v, -viewportHeight) // negative because image y goes down
-	c.pixelXVector = SDiv(horizontal, float64(width))
-	c.pixelYVector = SDiv(vertical, float64(height))
+	horizontal := u.SMul(viewportWidth)
+	vertical := v.SMul(-viewportHeight) // negative because image y goes down
+	c.pixelXVector = horizontal.SDiv(float64(width))
+	c.pixelYVector = vertical.SDiv(float64(height))
 	// Upper left corner of viewport
-	upperLeftCorner := c.Position.Minus(SMul(w, c.FocalLength), horizontal.Times(0.5), vertical.Times(0.5))
-	c.pixel00 = upperLeftCorner.Plus(Add(c.pixelXVector, c.pixelYVector).Times(0.5)) // center of pixel (0,0)
+	upperLeftCorner := c.Position.Minus(w.SMul(c.FocalLength), horizontal.Times(0.5), vertical.Times(0.5))
+	c.pixel00 = upperLeftCorner.Plus(c.pixelXVector.Add(c.pixelYVector).Times(0.5)) // center of pixel (0,0)
 }
 
 // GetRay generates a ray from the camera through the specified pixel coordinates,
@@ -116,22 +116,22 @@ func (c *Camera) GetRay(rng Rand, pixelX, pixelY, offsetX, offsetY float64) *Ray
 
 	// Ray from camera position through the pixel sample
 	rayOrigin := c.Position
-	rayDirection := Sub(pixelSample, c.Position)
+	rayDirection := pixelSample.Sub(c.Position)
 
 	// If aperture > 0, simulate depth of field by sampling from lens disk
 	if c.Aperture > 0 {
 		// Sample random point on lens disk
 		dx, dy := rng.SampleDisc(1.0) // Sample unit disk
-		offset := Add(SMul(c.defocusDiskU, dx), SMul(c.defocusDiskV, dy))
+		offset := c.defocusDiskU.SMul(dx).Add(c.defocusDiskV.SMul(dy))
 
 		// Compute the focus point: where the center ray hits the focus plane
 		// Focus plane is FocusDistance away from camera along view direction
 		focusTime := c.FocusDistance / c.FocalLength
-		focusPoint := Add(c.Position, SMul(rayDirection, focusTime))
+		focusPoint := c.Position.Add(rayDirection.SMul(focusTime))
 
 		// Ray now originates from offset position on lens disk and aims at focus point
-		rayOrigin = Add(c.Position, offset)
-		rayDirection = Sub(focusPoint, rayOrigin)
+		rayOrigin = c.Position.Add(offset)
+		rayDirection = focusPoint.Sub(rayOrigin)
 	}
 
 	return rng.NewRay(rayOrigin, rayDirection)

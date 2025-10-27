@@ -19,5 +19,5 @@ func (r Rand) NewRay(origin, direction Vec3) *Ray {
 }
 
 func (r *Ray) At(t float64) Vec3 {
-	return Add(r.Origin, SMul(r.Direction, t))
+	return r.Origin.Add(r.Direction.SMul(t))
 }

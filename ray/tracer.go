@@ -54,7 +54,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		// t.FocalLength = 5
 		// t.VerticalFoV = 40.0
 		t.Aperture = .1
-		t.FocusDistance = Length(Sub(t.Position, t.LookAt))
+		t.FocusDistance = t.Position.Sub(t.LookAt).Length()
 	}
 	// Need some/any light to get rays that aren't all black:
 	if scene.Background.ColorA == (ColorF{}) && scene.Background.ColorB == (ColorF{}) {
@@ -113,7 +113,7 @@ func (t *Tracer) RenderLines(yStart, yEnd int, scene *Scene) {
 		for x := range t.width {
 			// Compute ray for pixel (x, y)
 			// Multiple rays per pixel for antialiasing (alternative from scaling the image up/down).
-			colorSum := ColorF{0, 0, 0}
+			colorSum := ColorF{Vec3{0, 0, 0}}
 			for range t.NumRaysPerPixel {
 				// Sub-pixel offset for antialiasing
 				offsetX, offsetY := 0.0, 0.0 // Default to pixel center (0,0)
@@ -124,9 +124,9 @@ func (t *Tracer) RenderLines(yStart, yEnd int, scene *Scene) {
 				// Generate ray with depth of field (if Aperture > 0)
 				ray := t.Camera.GetRay(rng, float64(x), float64(y), offsetX, offsetY)
 				color := scene.RayColor(ray, t.MaxDepth)
-				colorSum = Add(colorSum, color)
+				colorSum = colorSum.Add(color)
 			}
-			c := SMul(colorSum, colorSumDiv).ToSRGBA()
+			c := colorSum.SMul(colorSumDiv).ToSRGBA()
 			// inline SetRGBA for performance
 			off := t.imageData.PixOffset(x, y)
 			s := pix[off : off+4 : off+4]

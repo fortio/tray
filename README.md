@@ -62,17 +62,22 @@ tray help
 
 flags:
   -d int
-    	Maximum ray bounce depth (default 12)
+        Maximum ray bounce depth (default 12)
   -exit
-    	Not interactive (no raw), and exit immediately after rendering the image once (for timing purposes)
+        Not interactive (no raw), and exit immediately after rendering the image once (for timing purposes)
   -profile-cpu string
-    	Write CPU profile to file
+        Write CPU profile to file
   -r int
-    	Number of rays per pixel (default 64)
+        Number of rays per pixel (default 64)
   -s float
-    	Image supersampling factor (default 4)
+        Image supersampling factor (default 4)
   -save string
-    	Save the rendered image to the specified PNG file
+        Save the rendered image to the specified PNG file
+  -seed uint
+        Seed for the random generators (0 randomizes each time)
   -w int
-    	Number of parallel workers (0 = GOMAXPROCS)
+        Number of parallel workers (0 = GOMAXPROCS)
 ```
+
+See also `benchmark help` for the non terminal drawing version used to check raytracer performance and output
+with a fixed image size (independent of terminal size/supersampling).

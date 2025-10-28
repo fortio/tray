@@ -43,6 +43,7 @@ func Main() int {
 	// Matches https://github.com/RayTracing/raytracing.github.io/blob/release/src/InOneWeekend/main.cc#L66-L67
 	fWidth := flag.Int("width", 1200, "Image width in pixels")
 	fHeight := flag.Int("height", 675, "Image height in pixels")
+	fProgressBar := flag.Bool("progress", true, "Disable progress bar with -progress=false")
 	cli.Main()
 	fname := *fSave
 	imgWidth := *fWidth
@@ -73,15 +74,21 @@ func Main() int {
 	// Camera setup:
 	rt.Camera = ray.RichSceneCamera()
 	// Setup progress bar
-	pb := progressbar.NewBar()
-	pb.Prefix = "Rendering "
-	total := imgWidth * imgHeight
-	p := progressbar.NewAutoProgress(pb, int64(total))
-	rt.ProgressFunc = func(n int) {
-		p.Update(n)
+	var pb *progressbar.Bar
+	if *fProgressBar {
+		pb = progressbar.NewBar()
+		pb.Prefix = "Rendering "
+		total := imgWidth * imgHeight
+		p := progressbar.NewAutoProgress(pb, int64(total))
+		rt.ProgressFunc = func(n int) {
+			p.Update(n)
+		}
 	}
 	img := rt.Render(scene)
-	pb.End()
+	if pb != nil {
+		pb.End()
+	}
+	// Save image
 	if fname != "" {
 		err := SaveImage(img, fname)
 		if err != nil {

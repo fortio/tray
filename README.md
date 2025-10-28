@@ -80,4 +80,4 @@ flags:
 ```
 
 See also `benchmark help` for the non terminal drawing version used to check raytracer performance and output
-with a fixed image size (independant of terminal size/supersampling).
+with a fixed image size (independent of terminal size/supersampling).

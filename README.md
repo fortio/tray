@@ -79,5 +79,5 @@ flags:
         Number of parallel workers (0 = GOMAXPROCS)
 ```
 
-See also `benchmark` for the non terminal drawing version used to check raytracer performance and output
+See also `benchmark help` for the non terminal drawing version used to check raytracer performance and output
 with a fixed image size (independant of terminal size/supersampling).

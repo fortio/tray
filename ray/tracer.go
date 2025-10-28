@@ -80,25 +80,36 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 	// Initialize camera viewport parameters (and set camera defaults if needed)
 	t.Camera.Initialize(t.width, t.height)
 
-	// Parallel rendering: divide work into horizontal bands
+	// Parallel rendering
 	var wg sync.WaitGroup
-	rowsPerWorker := t.height / t.NumWorkers
-	remainder := t.height % t.NumWorkers
-	startY := 0
-	for i := range t.NumWorkers {
-		// Distribute remainder rows to first workers (one extra row each)
-		endY := startY + rowsPerWorker
-		if i < remainder {
-			endY++
+	if t.NumWorkers == 1 {
+		// Special case: single worker renders entire image (preserves exact RNG sequence)
+		t.RenderLines(0, 0, t.height, scene)
+	} else {
+		// Work queue approach for dynamic load balancing across multiple workers
+		// Divide image into chunks (smaller than worker count for better distribution)
+		chunkSize := max(4, t.height/(t.NumWorkers*4))
+		type workChunk struct{ startY, endY int }
+		workQueue := make(chan workChunk, (t.height+chunkSize-1)/chunkSize)
+
+		// Fill work queue with chunks
+		for y := 0; y < t.height; y += chunkSize {
+			workQueue <- workChunk{y, min(y+chunkSize, t.height)}
 		}
-		wg.Add(1)
-		go (func(idx, yStart, yEnd int) {
-			t.RenderLines(idx, yStart, yEnd, scene)
-			wg.Done()
-		})(i, startY, endY)
-		startY = endY
+		close(workQueue)
+
+		// Workers pull chunks from queue until empty
+		for i := range t.NumWorkers {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				for chunk := range workQueue {
+					t.RenderLines(idx, chunk.startY, chunk.endY, scene)
+				}
+			}(i)
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 	return t.imageData
 }
 

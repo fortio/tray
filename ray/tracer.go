@@ -90,7 +90,9 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 		// Divide image into chunks (smaller than worker count for better distribution)
 		chunkSize := max(4, t.height/(t.NumWorkers*4))
 		type workChunk struct{ startY, endY int }
-		workQueue := make(chan workChunk, (t.height+chunkSize-1)/chunkSize)
+		// numChunks = ceiling of t.height/chunkSize
+		numChunks := (t.height + chunkSize - 1) / chunkSize
+		workQueue := make(chan workChunk, numChunks)
 
 		// Fill work queue with chunks
 		for y := 0; y < t.height; y += chunkSize {

@@ -13,23 +13,22 @@ func NewVec3(x, y, z float64) Vec3 {
 
 // Random generates a random vector with each component in [0,1).
 func Random(r rand.Rand) Vec3 {
-	x, y, z := r.Random3()
-	return Vec3{x, y, z}
+	return NewVec3(r.Random3())
 }
 
 // RandomInRange generates a random vector with each component in the Interval [Start, End).
 func RandomInRange(r rand.Rand, intv Interval) Vec3 {
-	x := r.RandomInRange(intv.Start, intv.End)
-	y := r.RandomInRange(intv.Start, intv.End)
-	z := r.RandomInRange(intv.Start, intv.End)
-	return Vec3{x, y, z}
+	return NewVec3(
+		r.RandomInRange(intv.Start, intv.End),
+		r.RandomInRange(intv.Start, intv.End),
+		r.RandomInRange(intv.Start, intv.End),
+	)
 }
 
 // RandomUnitVector generates a random unit vector using the shared rand package.
 // Returns a Vec3 instead of three separate floats.
 func RandomUnitVector(r rand.Rand) Vec3 {
-	x, y, z := r.RandomUnitVector()
-	return Vec3{x, y, z}
+	return NewVec3(r.RandomUnitVector())
 }
 
 // RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.
@@ -66,5 +65,5 @@ func RandomUnitVectorAngle(r rand.Rand) Vec3 {
 	radius := math.Sqrt(1 - z*z)
 	x := radius * math.Cos(angle)
 	y := radius * math.Sin(angle)
-	return Vec3{x, y, z}
+	return NewVec3(x, y, z)
 }

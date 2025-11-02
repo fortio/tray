@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"fortio.org/sets"
+	"fortio.org/rand"
 )
 
 func TestVec3Add(t *testing.T) {
@@ -500,37 +500,13 @@ func TestIntervalPredefinedConstants(t *testing.T) {
 	}
 }
 
-// TestRandom just... exercises the Random function
-// and that values are ... different.
-func TestRandom(t *testing.T) {
-	const samples = 10
-	results := sets.New[Vec3]()
-	expected := Interval{Start: 0.0, End: 1.0}
-	r := RandForTests()
-	for range samples {
-		v := Random(r)
-		// Check each component is in [0,1)
-		c := v.Components()
-		for i := range 3 {
-			if !expected.Contains(c[i]) {
-				t.Errorf("Random() component %d = %v, want in [0,1)", i, c[i])
-			}
-		}
-		// Collect unique samples
-		results.Add(v)
-	}
-	if results.Len() != samples {
-		t.Errorf("Random() produced %d unique samples, want %d", results.Len(), samples)
-	}
-}
-
 // TestRandomUnitVectorCorrectness verifies that all three RandomUnitVector variants
 // produce vectors of unit length.
 func TestRandomUnitVectorCorrectness(t *testing.T) {
 	r := RandForTests()
 	tests := []struct {
 		name string
-		fn   func(Rand) Vec3
+		fn   func(rand.Rand) Vec3
 	}{
 		{"RandomUnitVector", RandomUnitVector},
 		{"RandomUnitVectorAngle", RandomUnitVectorAngle},
@@ -567,7 +543,7 @@ func TestRandomUnitVectorDistribution(t *testing.T) {
 
 	tests := []struct {
 		name string
-		fn   func(Rand) Vec3
+		fn   func(rand.Rand) Vec3
 	}{
 		{"RandomUnitVectorRej", RandomUnitVectorRej},
 		{"RandomUnitVectorAngle", RandomUnitVectorAngle},
@@ -759,76 +735,6 @@ func TestRandomOnHemisphere(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestRandFloat64(t *testing.T) {
-	r := RandForTests()
-	const samples = 1000
-	for range samples {
-		v := r.Float64()
-		if v < 0 || v >= 1 {
-			t.Errorf("Float64() = %v, want in [0,1)", v)
-		}
-	}
-}
-
-func TestSampleDisc(t *testing.T) {
-	r := RandForTests()
-	radius := 2.5
-	const samples = 1000
-
-	for range samples {
-		x, y := r.SampleDisc(radius)
-
-		// Check that point is within disc
-		dist := math.Sqrt(x*x + y*y)
-		if dist > radius {
-			t.Errorf("SampleDisc(%v) = (%v, %v), distance %v exceeds radius",
-				radius, x, y, dist)
-		}
-	}
-}
-
-func TestSampleDiscAngle(t *testing.T) {
-	r := RandForTests()
-	radius := 3.0
-	const samples = 1000
-
-	for range samples {
-		x, y := r.SampleDiscAngle(radius)
-
-		// Check that point is within disc
-		dist := math.Sqrt(x*x + y*y)
-		if dist > radius {
-			t.Errorf("SampleDiscAngle(%v) = (%v, %v), distance %v exceeds radius",
-				radius, x, y, dist)
-		}
-	}
-}
-
-func TestSampleDiscMethods(t *testing.T) {
-	// Compare both methods produce valid results
-	r := RandForTests()
-	radius := 1.0
-	const samples = 100
-
-	for range samples {
-		x1, y1 := r.SampleDisc(radius)
-		x2, y2 := r.SampleDiscAngle(radius)
-
-		// Both should be within disc
-		dist1 := math.Sqrt(x1*x1 + y1*y1)
-		dist2 := math.Sqrt(x2*x2 + y2*y2)
-
-		if dist1 > radius {
-			t.Errorf("SampleDisc produced point outside disc: (%v, %v), dist=%v",
-				x1, y1, dist1)
-		}
-		if dist2 > radius {
-			t.Errorf("SampleDiscAngle produced point outside disc: (%v, %v), dist=%v",
-				x2, y2, dist2)
-		}
 	}
 }
 

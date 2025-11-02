@@ -2,109 +2,37 @@ package ray
 
 import (
 	"math"
-	"math/rand/v2"
+
+	"fortio.org/rand"
 )
 
-// Rand wraps a random number generator, is meant to be embedded in other structs and
-// reused during rendering but not shared across goroutines.
-type Rand struct {
-	rng *rand.Rand
-}
-
-// NewRand generates a new (scene) Rand with the given seed. If seed is 0, a random seed is used.
-func NewRand(seed uint64) Rand {
-	return NewRandIdx(0, seed)
-}
-
-// NewRandIdx creates a new Rand using the given index and seed.
-// idx can be used to create different Rand instances for different goroutines.
-// If seed is 0, a random seed is used and index is ignored.
-//
-//nolint:gosec // not crypto use.
-func NewRandIdx(idx int, seed uint64) Rand {
-	seed1 := uint64(idx)
-	seed2 := seed
-	if seed == 0 {
-		seed1 = rand.Uint64()
-		seed2 = rand.Uint64()
-	}
-	return newRandSeeds(seed1, seed2)
-}
-
-//nolint:gosec // not crypto use.
-func newRandSeeds(seed1, seed2 uint64) Rand {
-	return Rand{rng: rand.New(rand.NewPCG(seed1, seed2))}
-}
-
-func (r Rand) Float64() float64 {
-	return r.rng.Float64()
-}
-
-// Random generates a random vector with each component in [0,1).
-func Random(r Rand) Vec3 {
-	return Vec3{r.rng.Float64(), r.rng.Float64(), r.rng.Float64()}
-}
-
-// RandomInRange generates a random vector with each component in the Interval
-// excluding the end.
-//
-
-func RandomInRange(r Rand, intv Interval) Vec3 {
-	minV := intv.Start
-	l := intv.Length()
-	return Vec3{
-		minV + l*r.rng.Float64(),
-		minV + l*r.rng.Float64(),
-		minV + l*r.rng.Float64(),
-	}
-}
-
-// RandomUnitVectorRej generates a random unit vector using rejection sampling.
-// It repeatedly samples random vectors in the cube [-1,1)^3 until one is
-// found inside the unit sphere, then normalizes it to length 1.
-// This is the slowest of the three methods provided here.
-func RandomUnitVectorRej(r Rand) Vec3 {
-	for {
-		r := RandomInRange(r, Interval{Start: -1, End: 1})
-		lensq := LengthSquared(r)
-		if lensq > 1e-48 && lensq <= 1 {
-			return SDiv(r, math.Sqrt(lensq))
-		}
-	}
-}
-
-// RandomUnitVectorAngle generates a random unit vector using spherical coordinates.
-// This method is faster than rejection sampling but involves trigonometric functions.
-//
-
-func RandomUnitVectorAngle(r Rand) Vec3 {
-	angle := r.rng.Float64() * 2 * math.Pi
-	z := r.rng.Float64()*2 - 1 // in [-1,1)
-	radius := math.Sqrt(1 - z*z)
-	x := radius * math.Cos(angle)
-	y := radius * math.Sin(angle)
+// NewVec3 creates a Vec3 from three float64 values.
+func NewVec3(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
-// RandomUnitVector generates a random unit vector using normal distribution.
-// It is the fastest of the three methods provided here and produces uniformly
-// distributed points on the unit sphere. Being both correct and most efficient,
-// this is the preferred method for generating random unit vectors and thus gets
-// the default name.
-//
+// Random generates a random vector with each component in [0,1).
+func Random(r rand.Rand) Vec3 {
+	return NewVec3(r.Vec3())
+}
 
-func RandomUnitVector(r Rand) Vec3 {
-	for {
-		x, y, z := r.rng.NormFloat64(), r.rng.NormFloat64(), r.rng.NormFloat64()
-		radius := math.Sqrt(x*x + y*y + z*z)
-		if radius > 1e-24 {
-			return Vec3{x / radius, y / radius, z / radius}
-		}
-	}
+// RandomInRange generates a random vector with each component in the Interval [Start, End).
+func RandomInRange(r rand.Rand, intv Interval) Vec3 {
+	return NewVec3(
+		r.Float64Range(intv.Start, intv.End),
+		r.Float64Range(intv.Start, intv.End),
+		r.Float64Range(intv.Start, intv.End),
+	)
+}
+
+// RandomUnitVector generates a random unit vector using the shared rand package.
+// Returns a Vec3 instead of three separate floats.
+func RandomUnitVector(r rand.Rand) Vec3 {
+	return NewVec3(r.UnitVector())
 }
 
 // RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.
-func RandomOnHemisphere(r Rand, normal Vec3) Vec3 {
+func RandomOnHemisphere(r rand.Rand, normal Vec3) Vec3 {
 	onUnitSphere := RandomUnitVector(r)
 	if Dot(onUnitSphere, normal) > 0.0 { // In the same hemisphere as the normal
 		return onUnitSphere
@@ -112,27 +40,30 @@ func RandomOnHemisphere(r Rand, normal Vec3) Vec3 {
 	return Neg(onUnitSphere)
 }
 
-// SampleDisc returns a random point (x,y) within a disc of radius r
-// using the provided random source (and currently implemented via rejection sampling).
-func (r Rand) SampleDisc(radius float64) (x, y float64) {
+// The following functions are kept for backward compatibility with existing tests
+// that compare different random unit vector generation methods.
+
+// RandomUnitVectorRej generates a random unit vector using rejection sampling.
+// It repeatedly samples random vectors in the cube [-1,1)^3 until one is
+// found inside the unit sphere, then normalizes it to length 1.
+// This is the slowest of the three methods provided here.
+func RandomUnitVectorRej(r rand.Rand) Vec3 {
 	for {
-		x = 2*r.rng.Float64() - 1.0
-		y = 2*r.rng.Float64() - 1.0
-		if x*x+y*y <= 1 {
-			break
+		v := RandomInRange(r, Interval{Start: -1, End: 1})
+		lensq := LengthSquared(v)
+		if lensq > 1e-48 && lensq <= 1 {
+			return SDiv(v, math.Sqrt(lensq))
 		}
 	}
-	return radius * x, radius * y
 }
 
-// SampleDiscAngle returns a random point (x,y) within a disc of radius r.
-// Angle method.
-//
-
-func (r Rand) SampleDiscAngle(radius float64) (x, y float64) {
-	theta := 2.0 * math.Pi * r.rng.Float64()
-	rad := radius * math.Sqrt(r.rng.Float64())
-	x = rad * math.Cos(theta)
-	y = rad * math.Sin(theta)
-	return x, y
+// RandomUnitVectorAngle generates a random unit vector using spherical coordinates.
+// This method is faster than rejection sampling but involves trigonometric functions.
+func RandomUnitVectorAngle(r rand.Rand) Vec3 {
+	angle := r.Float64() * 2 * math.Pi
+	z := r.Float64()*2 - 1 // in [-1,1)
+	radius := math.Sqrt(1 - z*z)
+	x := radius * math.Cos(angle)
+	y := radius * math.Sin(angle)
+	return NewVec3(x, y, z)
 }

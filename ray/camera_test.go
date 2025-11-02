@@ -1,11 +1,15 @@
 package ray
 
-import "testing"
+import (
+	"testing"
+
+	"fortio.org/rand"
+)
 
 var zero Vec3
 
-func RandForTests() Rand {
-	return NewRand(42)
+func RandForTests() rand.Rand {
+	return rand.New(42)
 }
 
 func TestCamera_Initialize_PositionEqualsLookAt(t *testing.T) {
@@ -181,7 +185,7 @@ func TestCamera_GetRay_PixelCenter(t *testing.T) {
 	}
 	camera.Initialize(10, 10) // 10x10 image
 
-	rng := NewRand(42)
+	rng := rand.New(42)
 
 	// Get ray for pixel (5, 5) with offset (0, 0) - should be exact center
 	ray := camera.GetRay(rng, 5, 5, 0.0, 0.0)

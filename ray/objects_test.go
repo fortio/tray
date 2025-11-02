@@ -14,7 +14,7 @@ func testHit(h Hittable, r *Ray, i Interval) (bool, *HitRecord) {
 
 func TestSetFaceNormalFrontFace(t *testing.T) {
 	rnd := RandForTests()
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 	outwardNormal := Vec3{0, 0, 1}
 
 	hr := HitRecord{}
@@ -30,7 +30,7 @@ func TestSetFaceNormalFrontFace(t *testing.T) {
 
 func TestSetFaceNormalBackFace(t *testing.T) {
 	rnd := RandForTests()
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, 1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, 1})
 	outwardNormal := Vec3{0, 0, 1}
 
 	hr := HitRecord{}
@@ -52,7 +52,7 @@ func TestSphereHitSimple(t *testing.T) {
 		Radius: 0.5,
 		Mat:    Lambertian{Albedo: ColorF{1, 0, 0}},
 	}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	hit, rec := testHit(&sphere, ray, FrontEpsilon)
 
@@ -78,7 +78,7 @@ func TestSphereNoHitMiss(t *testing.T) {
 		Mat:    Lambertian{Albedo: ColorF{1, 0, 0}},
 	}
 	// Ray that misses the sphere
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{2, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{2, 0, -1})
 
 	hit, _ := testHit(&sphere, ray, FrontEpsilon)
 
@@ -95,7 +95,7 @@ func TestSphereHitNormal(t *testing.T) {
 		Mat:    Lambertian{Albedo: ColorF{1, 0, 0}},
 	}
 	// Ray from positive X hitting sphere
-	ray := rnd.NewRay(Vec3{2, 0, 0}, Vec3{-1, 0, 0})
+	ray := NewRay(rnd, Vec3{2, 0, 0}, Vec3{-1, 0, 0})
 
 	hit, rec := testHit(&sphere, ray, FrontEpsilon)
 
@@ -120,7 +120,7 @@ func TestSphereHitFromInside(t *testing.T) {
 		Mat:    Lambertian{Albedo: ColorF{1, 0, 0}},
 	}
 	// Ray from inside sphere going out
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{1, 0, 0})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{1, 0, 0})
 
 	hit, rec := testHit(&sphere, ray, Front)
 
@@ -139,7 +139,7 @@ func TestSphereHitInterval(t *testing.T) {
 		Radius: 1.0,
 		Mat:    Lambertian{Albedo: ColorF{1, 0, 0}},
 	}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	// Hit with acceptable interval
 	hit, _ := testHit(&sphere, ray, Interval{Start: 0, End: 10})
@@ -167,7 +167,7 @@ func TestSceneHitSingleObject(t *testing.T) {
 		Mat:    Lambertian{Albedo: ColorF{1, 0, 0}},
 	}
 	scene := Scene{Objects: []Hittable{sphere}}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	hit, rec := testHit(&scene, ray, FrontEpsilon)
 
@@ -192,7 +192,7 @@ func TestSceneHitMultipleObjects(t *testing.T) {
 		Mat:    Metal{Albedo: ColorF{0.8, 0.8, 0.8}},
 	}
 	scene := Scene{Objects: []Hittable{sphere1, sphere2}}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	hit, rec := testHit(&scene, ray, FrontEpsilon)
 
@@ -215,7 +215,7 @@ func TestSceneNoHit(t *testing.T) {
 	}
 	scene := Scene{Objects: []Hittable{sphere}}
 	// Ray that misses all objects
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{10, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{10, 0, -1})
 
 	hit, _ := testHit(&scene, ray, FrontEpsilon)
 
@@ -228,7 +228,7 @@ func TestRayColorBackgroundGradient(t *testing.T) {
 	rnd := RandForTests()
 	scene := &Scene{Objects: []Hittable{}}
 	// Ray pointing straight down (should give more blue)
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, -1, 0})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, -1, 0})
 
 	color := scene.RayColor(ray, 10)
 
@@ -246,7 +246,7 @@ func TestRayColorDepthLimit(t *testing.T) {
 		Mat:    Lambertian{Albedo: ColorF{1, 1, 1}},
 	}
 	scene := &Scene{Objects: []Hittable{sphere}, Background: DefaultBackground()}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	// With depth 0, should return black
 	color := scene.RayColor(ray, 0)
@@ -276,7 +276,7 @@ func TestRayColorDepthExhaustion(t *testing.T) {
 	scene := &Scene{Objects: []Hittable{sphere}}
 
 	// With maxDepth=1, after first bounce depth becomes 0 and returns black
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 	color := scene.RayColor(ray, 1)
 
 	// Should get some color from first bounce then black from second
@@ -305,7 +305,7 @@ func TestRayColorWithDifferentMaterials(t *testing.T) {
 				Mat:    tt.mat,
 			}
 			scene := &Scene{Objects: []Hittable{sphere}}
-			ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+			ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 			color := scene.RayColor(ray, 5)
 
@@ -331,7 +331,7 @@ func TestDefaultScene(t *testing.T) {
 
 	// Test that default scene can be rendered
 	rnd := RandForTests()
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 	color := scene.RayColor(ray, 5)
 	_ = color // Just ensure it runs without panic
 }
@@ -380,7 +380,7 @@ func TestRayColorMaterialAbsorption(t *testing.T) {
 		Mat:    Metal{Albedo: ColorF{0.8, 0.8, 0.8}, Fuzz: 5.0},
 	}
 	scene := &Scene{Objects: []Hittable{sphere}}
-	ray := rnd.NewRay(Vec3{0, 0, 0}, Vec3{0, 0, -1})
+	ray := NewRay(rnd, Vec3{0, 0, 0}, Vec3{0, 0, -1})
 
 	// Test that absorption path (didScatter=false) doesn't crash
 	for range 100 {

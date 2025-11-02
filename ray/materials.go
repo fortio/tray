@@ -16,7 +16,7 @@ func (l Lambertian) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
 	if NearZero(scatterDirection) {
 		scatterDirection = rec.Normal
 	}
-	scattered := rIn.NewRay(rec.Point, scatterDirection)
+	scattered := NewRay(rIn.Rand, rec.Point, scatterDirection)
 	return true, l.Albedo, scattered
 }
 
@@ -30,7 +30,7 @@ func (m Metal) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
 	if m.Fuzz > 0.0 {
 		reflected = Add(reflected, SMul(RandomUnitVector(rIn.Rand), m.Fuzz))
 	}
-	scattered := rIn.NewRay(rec.Point, reflected)
+	scattered := NewRay(rIn.Rand, rec.Point, reflected)
 	if Dot(scattered.Direction, rec.Normal) > 0 {
 		return true, m.Albedo, scattered
 	}
@@ -59,7 +59,7 @@ func (d Dielectric) Scatter(rIn *Ray, rec *HitRecord) (bool, ColorF, *Ray) {
 	} else {
 		direction = Refract(unitDirection, rec.Normal, refractionRatio)
 	}
-	scattered := rIn.NewRay(rec.Point, direction)
+	scattered := NewRay(rIn.Rand, rec.Point, direction)
 	return true, attenuation, scattered
 }
 

@@ -12,6 +12,7 @@ import (
 	"fortio.org/cli"
 	"fortio.org/log"
 	"fortio.org/progressbar"
+	"fortio.org/rand"
 	"fortio.org/tray/ray"
 )
 
@@ -59,8 +60,8 @@ func Main() int {
 		}
 		defer pprof.StopCPUProfile()
 	}
-	rand := ray.NewRand(*fSeed)
-	scene := ray.RichScene(rand)
+	rng := rand.New(*fSeed)
+	scene := ray.RichScene(rng)
 	if *fWorkers <= 0 {
 		*fWorkers = runtime.GOMAXPROCS(0)
 	}

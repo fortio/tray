@@ -1,6 +1,10 @@
 package ray
 
-import "math"
+import (
+	"math"
+
+	"fortio.org/rand"
+)
 
 type Camera struct {
 	// Position is where the camera is located in 3D space.
@@ -106,7 +110,7 @@ func (c *Camera) Initialize(width, height int) {
 //   - (0, 0) = pixel center
 //   - (-0.5, -0.5) = upper-left corner
 //   - (0.5, 0.5) = lower-right corner
-func (c *Camera) GetRay(rng Rand, pixelX, pixelY, offsetX, offsetY float64) *Ray {
+func (c *Camera) GetRay(rng rand.Rand, pixelX, pixelY, offsetX, offsetY float64) *Ray {
 	// Compute the point on the viewport
 	// offset (0,0) = pixel center, pixel00 already points to center of pixel (0,0)
 	pixelSample := c.pixel00.Plus(
@@ -134,7 +138,7 @@ func (c *Camera) GetRay(rng Rand, pixelX, pixelY, offsetX, offsetY float64) *Ray
 		rayDirection = Sub(focusPoint, rayOrigin)
 	}
 
-	return rng.NewRay(rayOrigin, rayDirection)
+	return NewRay(rng, rayOrigin, rayDirection)
 }
 
 func RichSceneCamera() Camera {

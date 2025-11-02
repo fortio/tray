@@ -7,7 +7,7 @@ func TestNewRay(t *testing.T) {
 	origin := Vec3{1, 2, 3}
 	direction := Vec3{4, 5, 6}
 
-	ray := rnd.NewRay(origin, direction)
+	ray := NewRay(rnd, origin, direction)
 
 	if ray.Origin != origin {
 		t.Errorf("Expected origin %v, got %v", origin, ray.Origin)
@@ -21,7 +21,7 @@ func TestRayAt(t *testing.T) {
 	rnd := RandForTests()
 	origin := Vec3{1, 0, 0}
 	direction := Vec3{0, 1, 0}
-	ray := rnd.NewRay(origin, direction)
+	ray := NewRay(rnd, origin, direction)
 
 	tests := []struct {
 		t        float64
@@ -46,7 +46,7 @@ func TestRayAtGeneral(t *testing.T) {
 	rnd := RandForTests()
 	origin := Vec3{1, 2, 3}
 	direction := Vec3{2, 3, 4}
-	ray := rnd.NewRay(origin, direction)
+	ray := NewRay(rnd, origin, direction)
 
 	t2 := 2.5
 	result := ray.At(t2)

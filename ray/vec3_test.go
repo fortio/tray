@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"fortio.org/rand"
 	"fortio.org/sets"
 )
 
@@ -530,7 +531,7 @@ func TestRandomUnitVectorCorrectness(t *testing.T) {
 	r := RandForTests()
 	tests := []struct {
 		name string
-		fn   func(Rand) Vec3
+		fn   func(rand.Rand) Vec3
 	}{
 		{"RandomUnitVector", RandomUnitVector},
 		{"RandomUnitVectorAngle", RandomUnitVectorAngle},
@@ -567,7 +568,7 @@ func TestRandomUnitVectorDistribution(t *testing.T) {
 
 	tests := []struct {
 		name string
-		fn   func(Rand) Vec3
+		fn   func(rand.Rand) Vec3
 	}{
 		{"RandomUnitVectorRej", RandomUnitVectorRej},
 		{"RandomUnitVectorAngle", RandomUnitVectorAngle},

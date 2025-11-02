@@ -1,6 +1,10 @@
 package ray
 
-import "math"
+import (
+	"math"
+
+	"fortio.org/rand"
+)
 
 // HitRecord holds information about a ray-object intersection.
 // Note: it's too big to be returned by value efficiently.
@@ -125,28 +129,28 @@ func DefaultScene() *Scene {
 	}
 }
 
-func RichScene(rand Rand) *Scene {
+func RichScene(rng rand.Rand) *Scene {
 	ground := Lambertian{Albedo: ColorF{0.5, 0.5, 0.5}}
 	world := &Scene{}
 	world.Objects = append(world.Objects, &Sphere{Center: Vec3{0, -1000, 0}, Radius: 1000, Mat: ground})
 
 	for a := -11; a < 11; a++ {
 		for b := -11; b < 11; b++ {
-			chooseMat := rand.Float64()
-			center := Vec3{float64(a) + 0.9*rand.Float64(), 0.2, float64(b) + 0.9*rand.Float64()}
+			chooseMat := rng.Float64()
+			center := Vec3{float64(a) + 0.9*rng.Float64(), 0.2, float64(b) + 0.9*rng.Float64()}
 
 			if Length(center.Minus(XYZ(4, 0.2, 0))) > 0.9 {
 				var sphereMaterial Material
 				switch {
 				case chooseMat < 0.8:
 					// diffuse
-					albedo := Mul(Random(rand), Random(rand))
+					albedo := Mul(Random(rng), Random(rng))
 					sphereMaterial = Lambertian{Albedo: albedo}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				case chooseMat < 0.95:
 					// metal
-					albedo := RandomInRange(rand, Interval{0.5, 1.0})
-					fuzz := rand.Float64() * 0.5
+					albedo := RandomInRange(rng, Interval{0.5, 1.0})
+					fuzz := rng.Float64() * 0.5
 					sphereMaterial = Metal{Albedo: albedo, Fuzz: fuzz}
 					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
 				default:

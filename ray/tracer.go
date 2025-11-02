@@ -17,6 +17,8 @@ import (
 	"image"
 	"runtime"
 	"sync"
+
+	"fortio.org/rand"
 )
 
 // Tracer represents a ray tracing engine.
@@ -116,7 +118,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 }
 
 func (t *Tracer) RenderLines(idx, yStart, yEnd int, scene *Scene) {
-	rng := NewRandIdx(idx, t.Seed)
+	rng := rand.NewRandIdx(idx, t.Seed)
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
 	pix := t.imageData.Pix

@@ -12,6 +12,7 @@ import (
 	"fortio.org/cli"
 	"fortio.org/log"
 	"fortio.org/progressbar"
+	"fortio.org/rand"
 	"fortio.org/terminal/ansipixels"
 	"fortio.org/tray/ray"
 	"golang.org/x/image/draw"
@@ -96,8 +97,8 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 	var resized *image.RGBA
 	showSplash := normalRawMode
 	fname := *fSave
-	rand := ray.NewRand(*fSeed)
-	scene := ray.RichScene(rand)
+	rng := rand.NewRand(*fSeed)
+	scene := ray.RichScene(rng)
 	ap.OnResize = func() error {
 		ap.ClearScreen()
 		// render at supersampled resolution

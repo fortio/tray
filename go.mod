@@ -7,7 +7,6 @@ require (
 	fortio.org/log v1.18.1
 	fortio.org/progressbar v1.2.0
 	fortio.org/rand v1.0.0
-	fortio.org/sets v1.3.0
 	fortio.org/terminal v0.60.2
 	golang.org/x/image v0.30.0
 	golang.org/x/term v0.36.0

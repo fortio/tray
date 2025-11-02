@@ -97,7 +97,7 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 	var resized *image.RGBA
 	showSplash := normalRawMode
 	fname := *fSave
-	rng := rand.NewRand(*fSeed)
+	rng := rand.New(*fSeed)
 	scene := ray.RichScene(rng)
 	ap.OnResize = func() error {
 		ap.ClearScreen()

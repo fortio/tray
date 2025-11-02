@@ -118,7 +118,7 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 }
 
 func (t *Tracer) RenderLines(idx, yStart, yEnd int, scene *Scene) {
-	rng := rand.NewRandIdx(idx, t.Seed)
+	rng := rand.NewIdx(idx, t.Seed)
 	multipleRays := t.NumRaysPerPixel > 1
 	colorSumDiv := 1.0 / float64(t.NumRaysPerPixel)
 	pix := t.imageData.Pix
@@ -135,7 +135,7 @@ func (t *Tracer) RenderLines(idx, yStart, yEnd int, scene *Scene) {
 				offsetX, offsetY := 0.0, 0.0 // Default to pixel center (0,0)
 				if multipleRays {
 					// Random offset within pixel for antialiasing
-					offsetX, offsetY = rng.SampleDisc(t.RayRadius)
+					offsetX, offsetY = rng.InDisc(t.RayRadius)
 				}
 				// Generate ray with depth of field (if Aperture > 0)
 				ray := t.Camera.GetRay(rng, float64(x), float64(y), offsetX, offsetY)

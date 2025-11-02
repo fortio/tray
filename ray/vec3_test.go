@@ -500,7 +500,6 @@ func TestIntervalPredefinedConstants(t *testing.T) {
 	}
 }
 
-
 // TestRandomUnitVectorCorrectness verifies that all three RandomUnitVector variants
 // produce vectors of unit length.
 func TestRandomUnitVectorCorrectness(t *testing.T) {
@@ -738,7 +737,6 @@ func TestRandomOnHemisphere(t *testing.T) {
 		})
 	}
 }
-
 
 // Benchmarks for comparing the three methods
 

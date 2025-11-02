@@ -60,7 +60,7 @@ func Main() int {
 		}
 		defer pprof.StopCPUProfile()
 	}
-	rng := rand.NewRand(*fSeed)
+	rng := rand.New(*fSeed)
 	scene := ray.RichScene(rng)
 	if *fWorkers <= 0 {
 		*fWorkers = runtime.GOMAXPROCS(0)

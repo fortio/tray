@@ -13,22 +13,22 @@ func NewVec3(x, y, z float64) Vec3 {
 
 // Random generates a random vector with each component in [0,1).
 func Random(r rand.Rand) Vec3 {
-	return NewVec3(r.Random3())
+	return NewVec3(r.Vec3())
 }
 
 // RandomInRange generates a random vector with each component in the Interval [Start, End).
 func RandomInRange(r rand.Rand, intv Interval) Vec3 {
 	return NewVec3(
-		r.RandomInRange(intv.Start, intv.End),
-		r.RandomInRange(intv.Start, intv.End),
-		r.RandomInRange(intv.Start, intv.End),
+		r.Float64Range(intv.Start, intv.End),
+		r.Float64Range(intv.Start, intv.End),
+		r.Float64Range(intv.Start, intv.End),
 	)
 }
 
 // RandomUnitVector generates a random unit vector using the shared rand package.
 // Returns a Vec3 instead of three separate floats.
 func RandomUnitVector(r rand.Rand) Vec3 {
-	return NewVec3(r.RandomUnitVector())
+	return NewVec3(r.UnitVector())
 }
 
 // RandomOnHemisphere returns a random unit vector on the hemisphere oriented by the given normal.

@@ -125,7 +125,7 @@ func (c *Camera) GetRay(rng rand.Rand, pixelX, pixelY, offsetX, offsetY float64)
 	// If aperture > 0, simulate depth of field by sampling from lens disk
 	if c.Aperture > 0 {
 		// Sample random point on lens disk
-		dx, dy := rng.SampleDisc(1.0) // Sample unit disk
+		dx, dy := rng.InDisc(1.0) // Sample unit disk
 		offset := Add(SMul(c.defocusDiskU, dx), SMul(c.defocusDiskV, dy))
 
 		// Compute the focus point: where the center ray hits the focus plane

@@ -3,11 +3,11 @@ module fortio.org/tray
 go 1.24.0
 
 require (
-	fortio.org/cli v1.12.2
-	fortio.org/log v1.18.1
+	fortio.org/cli v1.12.3
+	fortio.org/log v1.18.3
 	fortio.org/progressbar v1.2.0
 	fortio.org/rand v1.1.0
-	fortio.org/terminal v0.60.2
+	fortio.org/terminal v0.61.0
 	golang.org/x/image v0.30.0
 	golang.org/x/term v0.36.0
 )

@@ -35,19 +35,6 @@ func SaveImage(img image.Image, fname string) error {
 	return nil
 }
 
-// NonRawTerminalSize: gets the terminal size from any of the 3 standard file descriptors (stdout, stderr, stdin).
-// TODO: move to ansipixels package as it's quite generally useful.
-func NonRawTerminalSize() (width, height int, err error) {
-	for _, attempt := range []*os.File{os.Stdout, os.Stderr, os.Stdin} {
-		width, height, err = term.GetSize(int(attempt.Fd()))
-		if err == nil {
-			return width, height, nil
-		}
-	}
-	log.Warnf("Unable to get terminal size from any of stdout, stderr, stdin: %v", err)
-	return 80, 24, err
-}
-
 func Main() int { //nolint:funlen // yes but fairly linear.
 	fSample := flag.Float64("s", 4, "Image supersampling factor")
 	fRays := flag.Int("r", 64, "Number of rays per pixel")
@@ -91,7 +78,7 @@ func Main() int { //nolint:funlen // yes but fairly linear.
 		ap.SyncBackgroundColor()
 	} else {
 		ap = ansipixels.NewAnsiPixels(0) // 0 fps == for blocking non raw mode
-		ap.W, ap.H, _ = NonRawTerminalSize()
+		ap.W, ap.H, _ = ansipixels.NonRawTerminalSize()
 		defer fmt.Println()
 	}
 	var resized *image.RGBA

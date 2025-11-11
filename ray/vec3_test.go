@@ -742,21 +742,21 @@ func TestRandomOnHemisphere(t *testing.T) {
 
 func BenchmarkRandomUnitVector(b *testing.B) {
 	r := RandForTests()
-	for range b.N {
+	for b.Loop() {
 		_ = RandomUnitVectorRej(r)
 	}
 }
 
 func BenchmarkRandomUnitVectorAngle(b *testing.B) {
 	r := RandForTests()
-	for range b.N {
+	for b.Loop() {
 		_ = RandomUnitVectorAngle(r)
 	}
 }
 
 func BenchmarkRandomUnitVectorNorm(b *testing.B) {
 	r := RandForTests()
-	for range b.N {
+	for b.Loop() {
 		_ = RandomUnitVector(r)
 	}
 }

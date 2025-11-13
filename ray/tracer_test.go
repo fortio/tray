@@ -81,11 +81,11 @@ func TestRender_CustomScene(t *testing.T) {
 	tracer := New(5, 5)
 	scene := &Scene{
 		Objects: []Hittable{
-			&Sphere{
-				Center: Vec3{0, 0, -1},
-				Radius: 0.5,
-				Mat:    Lambertian{Albedo: ColorF{1, 0, 0}},
-			},
+			NewSphere(
+				Vec3{0, 0, -1},
+				0.5,
+				Lambertian{Albedo: ColorF{1, 0, 0}},
+			),
 		},
 	}
 

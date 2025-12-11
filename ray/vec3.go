@@ -184,6 +184,13 @@ type Interval struct {
 	Start, End float64
 }
 
+func OrderedInterval(a, b float64) Interval {
+	if a < b {
+		return Interval{Start: a, End: b}
+	}
+	return Interval{Start: b, End: a}
+}
+
 // Length returns the length of the interval (End - Start).
 func (i Interval) Length() float64 {
 	return i.End - i.Start
@@ -199,6 +206,13 @@ func (i Interval) Surrounds(t float64) bool {
 	return t > i.Start && t < i.End
 }
 
+func Union(a, b Interval) Interval {
+	return Interval{
+		Start: min(a.Start, b.Start),
+		End:   max(a.End, b.End),
+	}
+}
+
 // Clamp returns t clamped to the interval [Start, End].
 // If t < Start, returns Start. If t > End, returns End. Otherwise returns t.
 func (i Interval) Clamp(t float64) float64 {
@@ -209,6 +223,12 @@ func (i Interval) Clamp(t float64) float64 {
 		return i.End
 	}
 	return t
+}
+
+// Expand returns a new Interval expanded by delta on both sides.
+func (i Interval) Expand(delta float64) Interval {
+	padding := delta / 2
+	return Interval{Start: i.Start - padding, End: i.End + padding}
 }
 
 var (

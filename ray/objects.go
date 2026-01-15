@@ -27,11 +27,13 @@ func (hr *HitRecord) SetFaceNormal(r *Ray, outwardNormal Vec3) {
 
 type Hittable interface {
 	Hit(r *Ray, interval Interval, hr *HitRecord) bool
+	BoundingBox() AABB
 }
 
 type Scene struct {
 	Objects    []Hittable
 	Background AmbientLight
+	BBox       AABB
 }
 
 func (s *Scene) Hit(r *Ray, interval Interval, hr *HitRecord) (hitAnything bool) {
@@ -61,6 +63,10 @@ func (s *Scene) RayColor(r *Ray, depth int) ColorF {
 	return s.Background.Hit(r)
 }
 
+func (s *Scene) BoundingBox() AABB {
+	return s.BBox
+}
+
 type AmbientLight struct {
 	ColorA, ColorB ColorF
 }
@@ -76,9 +82,38 @@ type Sphere struct {
 	Center Vec3
 	Radius float64
 	Mat    Material
+	BBox   AABB
+}
+
+func NewSphere(center Vec3, radius float64, mat Material) *Sphere {
+	s := &Sphere{
+		Center: center,
+		Radius: radius,
+		Mat:    mat,
+	}
+	s.BBox = s.boundingBox()
+	return s
+}
+
+func (s *Sphere) boundingBox() AABB {
+	r := s.Radius
+	/* See the box test:
+	if r < 5 {
+		r *= .5
+	}
+	*/
+	rVec := Vec3{r, r, r}
+	return NewAABB(s.Center.Minus(rVec), s.Center.Plus(rVec))
+}
+
+func (s *Sphere) BoundingBox() AABB {
+	return s.BBox
 }
 
 func (s *Sphere) Hit(r *Ray, i Interval, hr *HitRecord) bool {
+	/*if !s.BBox.Hit(r, i) {
+		return false
+	}*/
 	oc := Sub(s.Center, r.Origin)
 	a := LengthSquared(r.Direction)
 	h := Dot(r.Direction, oc)
@@ -119,11 +154,11 @@ func DefaultScene() *Scene {
 	return &Scene{
 		// Default scene with two spheres.
 		Objects: []Hittable{
-			&Sphere{Center: Vec3{0, 0, -1.2}, Radius: 0.5, Mat: center},
-			&Sphere{Center: Vec3{0, -100.5, -1}, Radius: 100, Mat: ground},
-			&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.5, Mat: left},
-			&Sphere{Center: Vec3{-1.0, 0, -1}, Radius: 0.4, Mat: bubble},
-			&Sphere{Center: Vec3{1.0, 0, -1}, Radius: 0.5, Mat: right},
+			NewSphere(Vec3{0, 0, -1.2}, 0.5, center),
+			NewSphere(Vec3{0, -100.5, -1}, 100, ground),
+			NewSphere(Vec3{-1.0, 0, -1}, 0.5, left),
+			NewSphere(Vec3{-1.0, 0, -1}, 0.4, bubble),
+			NewSphere(Vec3{1.0, 0, -1}, 0.5, right),
 		},
 		Background: DefaultBackground(),
 	}
@@ -132,7 +167,7 @@ func DefaultScene() *Scene {
 func RichScene(rng rand.Rand) *Scene {
 	ground := Lambertian{Albedo: ColorF{0.5, 0.5, 0.5}}
 	world := &Scene{}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{0, -1000, 0}, Radius: 1000, Mat: ground})
+	world.Objects = append(world.Objects, NewSphere(Vec3{0, -1000, 0}, 1000, ground))
 
 	for a := -11; a < 11; a++ {
 		for b := -11; b < 11; b++ {
@@ -146,30 +181,30 @@ func RichScene(rng rand.Rand) *Scene {
 					// diffuse
 					albedo := Mul(Random(rng), Random(rng))
 					sphereMaterial = Lambertian{Albedo: albedo}
-					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
+					world.Objects = append(world.Objects, NewSphere(center, 0.2, sphereMaterial))
 				case chooseMat < 0.95:
 					// metal
 					albedo := RandomInRange(rng, Interval{0.5, 1.0})
 					fuzz := rng.Float64() * 0.5
 					sphereMaterial = Metal{Albedo: albedo, Fuzz: fuzz}
-					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
+					world.Objects = append(world.Objects, NewSphere(center, 0.2, sphereMaterial))
 				default:
 					// glass
 					sphereMaterial = Dielectric{RefIdx: 1.5}
-					world.Objects = append(world.Objects, &Sphere{Center: center, Radius: 0.2, Mat: sphereMaterial})
+					world.Objects = append(world.Objects, NewSphere(center, 0.2, sphereMaterial))
 				}
 			}
 		}
 	}
 
 	material1 := Dielectric{RefIdx: 1.5}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{0, 1, 0}, Radius: 1.0, Mat: material1})
+	world.Objects = append(world.Objects, NewSphere(Vec3{0, 1, 0}, 1.0, material1))
 
 	material2 := Lambertian{Albedo: ColorF{0.4, 0.2, 0.1}}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{-4, 1, 0}, Radius: 1.0, Mat: material2})
+	world.Objects = append(world.Objects, NewSphere(Vec3{-4, 1, 0}, 1.0, material2))
 
 	material3 := Metal{Albedo: ColorF{0.7, 0.6, 0.5}, Fuzz: 0.0}
-	world.Objects = append(world.Objects, &Sphere{Center: Vec3{4, 1, 0}, Radius: 1.0, Mat: material3})
+	world.Objects = append(world.Objects, NewSphere(Vec3{4, 1, 0}, 1.0, material3))
 
 	return world
 }

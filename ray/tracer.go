@@ -104,13 +104,11 @@ func (t *Tracer) Render(scene *Scene) *image.RGBA {
 
 		// Workers pull chunks from queue until empty
 		for range t.NumWorkers {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				for chunk := range workQueue {
 					t.RenderLines(chunk.startY, chunk.startY, chunk.endY, scene)
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	}
